@@ -1,16 +1,15 @@
-/**
- * Send email via Microsoft Graph API using client credentials
- * 
- * @param {Object} params
- * @param {string[]} params.to - Array of recipient email addresses
- * @param {string[]} [params.cc] - Array of CC email addresses (optional)
- * @param {string} params.subject - Email subject
- * @param {string} [params.htmlBody] - HTML email body (optional)
- * @param {string} [params.textBody] - Plain text email body (optional)
- * @returns {Object} - { success: boolean, messageId?: string, error?: string }
- */
-export default async function sendEmailViaGraph({ to, cc, subject, htmlBody, textBody }, { base44, secrets }) {
+import { createClientFromRequest } from 'npm:@base44/sdk@0.8.4';
+
+Deno.serve(async (req) => {
   try {
+    const base44 = createClientFromRequest(req);
+    
+    // Parse request body
+    const { to, cc, subject, htmlBody, textBody } = await req.json();
+    
+    console.log('=== sendEmailViaGraph function called ===');
+    console.log('Parameters received:', { to, cc, subject, hasHtmlBody: !!htmlBody, hasTextBody: !!textBody });
+    
     // Validate required parameters
     if (!to || !Array.isArray(to) || to.length === 0) {
       throw new Error('Missing or invalid "to" parameter. Must be a non-empty array of email addresses.');
@@ -22,17 +21,25 @@ export default async function sendEmailViaGraph({ to, cc, subject, htmlBody, tex
       throw new Error('Either "htmlBody" or "textBody" must be provided.');
     }
 
-    // Get secrets
-    const tenantId = secrets.GRAPH_TENANT_ID;
-    const clientId = secrets.GRAPH_CLIENT_ID;
-    const clientSecret = secrets.GRAPH_CLIENT_SECRET;
-    const senderAddress = secrets.GRAPH_SENDER_ADDRESS;
+    // Get secrets from environment
+    const tenantId = Deno.env.get('GRAPH_TENANT_ID');
+    const clientId = Deno.env.get('GRAPH_CLIENT_ID');
+    const clientSecret = Deno.env.get('GRAPH_CLIENT_SECRET');
+    const senderAddress = Deno.env.get('GRAPH_SENDER_ADDRESS');
+
+    console.log('Secrets check:', {
+      hasTenantId: !!tenantId,
+      hasClientId: !!clientId,
+      hasClientSecret: !!clientSecret,
+      hasSenderAddress: !!senderAddress
+    });
 
     if (!tenantId || !clientId || !clientSecret || !senderAddress) {
       throw new Error('Missing required Graph API secrets. Please configure GRAPH_TENANT_ID, GRAPH_CLIENT_ID, GRAPH_CLIENT_SECRET, and GRAPH_SENDER_ADDRESS.');
     }
 
     // Get access token using client credentials flow
+    console.log('Requesting access token from Azure AD...');
     const tokenResponse = await fetch(
       `https://login.microsoftonline.com/${tenantId}/oauth2/v2.0/token`,
       {
@@ -51,10 +58,12 @@ export default async function sendEmailViaGraph({ to, cc, subject, htmlBody, tex
 
     if (!tokenResponse.ok) {
       const errorData = await tokenResponse.json().catch(() => ({}));
+      console.error('Token request failed:', errorData);
       throw new Error(`Failed to get access token: ${tokenResponse.status} ${tokenResponse.statusText}. ${JSON.stringify(errorData)}`);
     }
 
     const { access_token } = await tokenResponse.json();
+    console.log('Access token obtained successfully');
 
     // Build the email message in Microsoft Graph format
     const message = {
@@ -76,6 +85,11 @@ export default async function sendEmailViaGraph({ to, cc, subject, htmlBody, tex
     }
 
     // Send email via Microsoft Graph API using the sender address
+    console.log('Sending email via Microsoft Graph...');
+    console.log('Sender address:', senderAddress);
+    console.log('Recipients (to):', to);
+    console.log('Recipients (cc):', cc || '(none)');
+    
     const response = await fetch(
       `https://graph.microsoft.com/v1.0/users/${senderAddress}/sendMail`,
       {
@@ -90,21 +104,27 @@ export default async function sendEmailViaGraph({ to, cc, subject, htmlBody, tex
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
+      console.error('Graph API error response:', errorData);
       throw new Error(
         `Microsoft Graph API error: ${response.status} ${response.statusText}. ${JSON.stringify(errorData)}`
       );
     }
 
-    return {
+    console.log('=== Email sent successfully ===');
+    
+    return Response.json({
       success: true,
       message: 'Email sent successfully via Microsoft Graph'
-    };
+    });
 
   } catch (error) {
-    console.error('Error sending email via Graph:', error);
-    return {
+    console.error('=== Error in sendEmailViaGraph ===');
+    console.error('Error:', error.message);
+    console.error('Stack:', error.stack);
+    
+    return Response.json({
       success: false,
       error: error.message
-    };
+    }, { status: 500 });
   }
-}
+});
