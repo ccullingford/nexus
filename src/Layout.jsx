@@ -18,8 +18,8 @@ import {
 
 const navItems = [
   { name: 'Dashboard', icon: LayoutDashboard, path: 'Dashboard' },
+  { name: 'Invoice Manager', icon: FileText, path: 'InvoiceManager' },
   { name: 'HOA Manager', icon: Building2, path: 'HOAManager' },
-  { name: 'Invoice Flow', icon: FileText, path: 'InvoiceFlow' },
   { name: 'Resident Forms', icon: ClipboardList, path: 'ResidentForms' },
   { name: 'Survey Hub', icon: BarChart3, path: 'SurveyHub' },
   { name: 'Link Vault', icon: Link2, path: 'LinkVault' },

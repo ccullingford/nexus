@@ -16,21 +16,21 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 
 const tools = [
   {
+    name: 'Invoice Manager',
+    description: 'Create invoices, manage customers, and track billing with AI-powered receipt extraction.',
+    icon: FileText,
+    path: 'InvoiceManager',
+    color: 'from-emerald-500 to-emerald-600',
+    bgColor: 'bg-emerald-50',
+    status: 'active'
+  },
+  {
     name: 'HOA Manager',
     description: 'Manage homeowner associations, board members, and community operations.',
     icon: Building2,
     path: 'HOAManager',
     color: 'from-blue-500 to-blue-600',
     bgColor: 'bg-blue-50',
-    status: 'coming_soon'
-  },
-  {
-    name: 'Invoice Flow',
-    description: 'Streamline invoice processing, approvals, and payment tracking.',
-    icon: FileText,
-    path: 'InvoiceFlow',
-    color: 'from-emerald-500 to-emerald-600',
-    bgColor: 'bg-emerald-50',
     status: 'coming_soon'
   },
   {
@@ -132,6 +132,11 @@ export default function Dashboard() {
                       {tool.status === 'coming_soon' && (
                         <span className="text-xs font-medium px-2 py-1 rounded-full bg-[#e3e4ed] text-[#5c5f7a]">
                           Coming Soon
+                        </span>
+                      )}
+                      {tool.status === 'active' && (
+                        <span className="text-xs font-medium px-2 py-1 rounded-full bg-green-100 text-green-700">
+                          Active
                         </span>
                       )}
                     </div>
