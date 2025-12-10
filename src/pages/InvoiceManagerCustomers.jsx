@@ -37,6 +37,7 @@ const emptyCustomer = {
   state: '',
   zip: '',
   type: 'other',
+  association_id: '',
   notes: ''
 };
 
@@ -136,10 +137,16 @@ export default function InvoiceManagerCustomers() {
 
   const handleSubmit = (e) => {
     e.preventDefault();
+    
+    // Clean up empty values
+    const cleanData = Object.fromEntries(
+      Object.entries(formData).filter(([key, value]) => value !== '' && value !== null && value !== undefined)
+    );
+    
     if (editingCustomer) {
-      updateCustomerMutation.mutate({ id: editingCustomer.id, data: formData });
+      updateCustomerMutation.mutate({ id: editingCustomer.id, data: cleanData });
     } else {
-      createCustomerMutation.mutate(formData);
+      createCustomerMutation.mutate(cleanData);
     }
   };
 
