@@ -1,0 +1,84 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 232 15% 30%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 232 15% 30%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 232 15% 30%;
+
+    --primary: 234 16% 30%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 234 12% 42%;
+    --secondary-foreground: 0 0% 100%;
+
+    --muted: 234 12% 92%;
+    --muted-foreground: 234 12% 42%;
+
+    --accent: 234 12% 92%;
+    --accent-foreground: 234 16% 30%;
+
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 0 0% 98%;
+
+    --border: 234 12% 90%;
+    --input: 234 12% 90%;
+    --ring: 234 16% 30%;
+
+    --radius: 0.75rem;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+    font-feature-settings: "rlig" 1, "calt" 1;
+  }
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #a1a1a1;
+}
+
+/* Smooth transitions */
+* {
+  scroll-behavior: smooth;
+}
+
+/* Focus styles */
+:focus-visible {
+  outline: 2px solid #414257;
+  outline-offset: 2px;
+}
+
+/* Selection color */
+::selection {
+  background-color: #414257;
+  color: white;
+}
