@@ -1,11 +1,63 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
-import { Settings, FileSpreadsheet, Shield, ArrowRight } from 'lucide-react';
+import { base44 } from '@/api/base44Client';
+import { Settings, FileSpreadsheet, Shield, ArrowRight, AlertCircle } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 
 export default function GeneralSettings() {
+  const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const loadUser = async () => {
+      try {
+        const currentUser = await base44.auth.me();
+        setUser(currentUser);
+      } catch (error) {
+        console.error('Error loading user:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    loadUser();
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="max-w-6xl mx-auto py-12 text-center">
+        <p className="text-[#5c5f7a]">Loading...</p>
+      </div>
+    );
+  }
+
+  // Check if user has admin access
+  const hasAccess = user && (user.role === 'Super Admin' || user.role === 'Org Admin');
+
+  if (!hasAccess) {
+    return (
+      <div className="max-w-2xl mx-auto space-y-6">
+        <Card className="border-0 shadow-sm">
+          <CardContent className="p-8 text-center">
+            <div className="w-16 h-16 rounded-full bg-red-100 flex items-center justify-center mx-auto mb-4">
+              <AlertCircle className="w-8 h-8 text-red-600" />
+            </div>
+            <h2 className="text-xl font-semibold text-[#414257] mb-2">Access Denied</h2>
+            <p className="text-[#5c5f7a] mb-6">
+              You do not have permission to access this page. General Settings are only available to administrators.
+            </p>
+            <Link to={createPageUrl('Dashboard')}>
+              <Button className="bg-[#414257] hover:bg-[#5c5f7a]">
+                Back to Dashboard
+              </Button>
+            </Link>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
   return (
     <div className="max-w-6xl mx-auto space-y-6">
       {/* Header */}
