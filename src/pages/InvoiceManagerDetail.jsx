@@ -211,6 +211,14 @@ export default function InvoiceManagerDetail() {
         </div>
 
         <div className="flex gap-2">
+          {/* TODO: Later require "invoice-manager:write" permission */}
+          <Button
+            variant="outline"
+            onClick={() => window.location.href = createPageUrl('InvoiceManagerEdit') + `?id=${invoiceId}`}
+          >
+            <Edit className="w-4 h-4 mr-2" />
+            Edit
+          </Button>
           <Button
             variant="outline"
             size="icon"

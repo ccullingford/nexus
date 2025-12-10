@@ -12,6 +12,7 @@ import InvoiceManagerDetail from './pages/InvoiceManagerDetail';
 import InvoiceManagerCustomers from './pages/InvoiceManagerCustomers';
 import InvoiceManagerUpload from './pages/InvoiceManagerUpload';
 import InvoiceManagerAdmin from './pages/InvoiceManagerAdmin';
+import InvoiceManagerEdit from './pages/InvoiceManagerEdit';
 import __Layout from './Layout.jsx';
 
 
@@ -30,6 +31,7 @@ export const PAGES = {
     "InvoiceManagerCustomers": InvoiceManagerCustomers,
     "InvoiceManagerUpload": InvoiceManagerUpload,
     "InvoiceManagerAdmin": InvoiceManagerAdmin,
+    "InvoiceManagerEdit": InvoiceManagerEdit,
 }
 
 export const pagesConfig = {
