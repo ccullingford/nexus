@@ -205,7 +205,16 @@ export default function InvoiceManagerCustomers() {
                           {customer.type}
                         </Badge>
                       </TableCell>
-                      <TableCell>{customer.email || '—'}</TableCell>
+                      <TableCell>
+                        {customer.email ? (
+                          <div>
+                            <p>{customer.email}</p>
+                            {customer.secondary_email && (
+                              <p className="text-xs text-[#5c5f7a] mt-0.5">{customer.secondary_email}</p>
+                            )}
+                          </div>
+                        ) : '—'}
+                      </TableCell>
                       <TableCell>
                         {customer.city && customer.state 
                           ? `${customer.city}, ${customer.state}`
