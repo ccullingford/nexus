@@ -20,129 +20,166 @@ Deno.serve(async (req) => {
 
     const doc = new jsPDF();
 
-    // Header
-    doc.setFillColor(65, 66, 87);
-    doc.rect(0, 0, 210, 30, 'F');
-    doc.setTextColor(255, 255, 255);
-    doc.setFontSize(24);
-    doc.text(`Invoice ${invoice.invoice_number}`, 15, 20);
-
-    // Reset text color
-    doc.setTextColor(65, 66, 87);
-
-    // Title (if exists)
-    let yPos = 45;
-    if (invoice.title) {
-      doc.setFontSize(16);
-      doc.text(invoice.title, 15, yPos);
-      yPos += 10;
-    }
-
-    // Bill To section
-    doc.setFontSize(12);
+    // Company Header (top left) and Invoice Info (top right)
+    doc.setFontSize(11);
     doc.setFont(undefined, 'bold');
-    doc.text('Bill To:', 15, yPos);
+    doc.text('JCC Property Group', 15, 20);
     doc.setFont(undefined, 'normal');
-    yPos += 7;
-    doc.text(invoice.customer_name, 15, yPos);
-    
-    if (invoice.customer_address) {
-      yPos += 5;
-      doc.setFontSize(10);
-      doc.setTextColor(92, 95, 122);
-      const addressLines = doc.splitTextToSize(invoice.customer_address, 80);
-      doc.text(addressLines, 15, yPos);
-      yPos += addressLines.length * 5;
-    }
+    doc.setFontSize(9);
+    doc.text('PO Box 1799', 15, 26);
+    doc.text('Indian Trail, NC 28079 United States', 15, 31);
+    doc.text('INFO@JCCPG.COM | (704) 595-9282', 15, 36);
 
-    doc.setTextColor(65, 66, 87);
-    doc.setFontSize(12);
-    yPos += 10;
-
-    // Dates
-    if (invoice.issue_date) {
-      doc.setFont(undefined, 'bold');
-      doc.text('Issue Date: ', 15, yPos);
-      doc.setFont(undefined, 'normal');
-      doc.text(new Date(invoice.issue_date).toLocaleDateString(), 50, yPos);
-      yPos += 7;
-    }
-
-    if (invoice.due_date) {
-      doc.setFont(undefined, 'bold');
-      doc.text('Due Date: ', 15, yPos);
-      doc.setFont(undefined, 'normal');
-      doc.text(new Date(invoice.due_date).toLocaleDateString(), 50, yPos);
-      yPos += 7;
-    }
-
-    yPos += 10;
-
-    // Line items table
-    doc.setFont(undefined, 'bold');
+    // Invoice number and issue date (top right)
     doc.setFontSize(10);
-    doc.text('Description', 15, yPos);
-    doc.text('Qty', 120, yPos, { align: 'center' });
-    doc.text('Price', 150, yPos, { align: 'right' });
+    doc.setFont(undefined, 'bold');
+    doc.text(`Invoice #${invoice.invoice_number}`, 195, 20, { align: 'right' });
+    doc.setFont(undefined, 'normal');
+    doc.setFontSize(9);
+    doc.text('Issue date', 195, 26, { align: 'right' });
+    if (invoice.issue_date) {
+      doc.text(new Date(invoice.issue_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }), 195, 31, { align: 'right' });
+    }
+
+    // Gray separator line
+    doc.setDrawColor(180, 180, 180);
+    doc.setLineWidth(0.5);
+    doc.line(15, 42, 195, 42);
+
+    // Main Invoice Heading
+    let yPos = 55;
+    doc.setFontSize(22);
+    doc.setFont(undefined, 'bold');
+    doc.setTextColor(0, 0, 0);
+    doc.text(`Invoice #${invoice.invoice_number}`, 15, yPos);
+    
+    // Subtitle (title field)
+    yPos += 8;
+    doc.setFontSize(10);
+    doc.setFont(undefined, 'normal');
+    doc.setTextColor(100, 100, 100);
+    if (invoice.title) {
+      doc.text(invoice.title, 15, yPos);
+    }
+
+    // Three-column section: Customer | Invoice Details | Payment
+    yPos += 15;
+    doc.setTextColor(0, 0, 0);
+    doc.setFontSize(9);
+    doc.setFont(undefined, 'bold');
+    
+    // Customer column
+    doc.text('Customer', 15, yPos);
+    doc.setFont(undefined, 'normal');
+    doc.text(invoice.customer_name, 15, yPos + 5);
+    if (invoice.customer_email) {
+      doc.text(invoice.customer_email, 15, yPos + 10);
+    }
+
+    // Invoice Details column
+    doc.setFont(undefined, 'bold');
+    doc.text('Invoice Details', 80, yPos);
+    doc.setFont(undefined, 'normal');
+    const createdDate = new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+    doc.text(`PDF created ${createdDate}`, 80, yPos + 5);
+    doc.text(`$${(invoice.total || 0).toFixed(2)}`, 80, yPos + 10);
+
+    // Payment column
+    doc.setFont(undefined, 'bold');
+    doc.text('Payment', 145, yPos);
+    doc.setFont(undefined, 'normal');
+    if (invoice.due_date) {
+      const dueDate = new Date(invoice.due_date).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+      doc.text(`Due ${dueDate}`, 145, yPos + 5);
+    }
+    doc.text(`$${(invoice.total || 0).toFixed(2)}`, 145, yPos + 10);
+
+    yPos += 25;
+
+    // Line items table header
+    doc.setFont(undefined, 'bold');
+    doc.setFontSize(9);
+    doc.setTextColor(0, 0, 0);
+    doc.text('Items', 15, yPos);
+    doc.text('Quantity', 130, yPos, { align: 'right' });
+    doc.text('Price', 160, yPos, { align: 'right' });
     doc.text('Amount', 195, yPos, { align: 'right' });
     
-    yPos += 3;
+    yPos += 2;
+    doc.setDrawColor(220, 220, 220);
+    doc.setLineWidth(0.3);
     doc.line(15, yPos, 195, yPos);
-    yPos += 7;
+    yPos += 8;
 
     // Line items
     doc.setFont(undefined, 'normal');
+    doc.setFontSize(9);
     if (invoice.line_items && invoice.line_items.length > 0) {
       invoice.line_items.forEach((item) => {
-        if (yPos > 270) {
+        if (yPos > 240) {
           doc.addPage();
           yPos = 20;
         }
 
-        const description = doc.splitTextToSize(item.description || '', 90);
+        const description = doc.splitTextToSize(item.description || '', 110);
         doc.text(description, 15, yPos);
-        doc.text(String(item.quantity || 0), 120, yPos, { align: 'center' });
-        doc.text(`$${(item.price || 0).toFixed(2)}`, 150, yPos, { align: 'right' });
+        doc.text(String(item.quantity || 0), 130, yPos, { align: 'right' });
+        doc.text(`$${(item.price || 0).toFixed(2)}`, 160, yPos, { align: 'right' });
         doc.text(`$${(item.amount || 0).toFixed(2)}`, 195, yPos, { align: 'right' });
         
-        yPos += Math.max(description.length * 5, 7);
+        yPos += Math.max(description.length * 5, 8);
       });
     }
 
     yPos += 5;
+    doc.setDrawColor(220, 220, 220);
     doc.line(15, yPos, 195, yPos);
-    yPos += 10;
+    yPos += 8;
 
-    // Totals
+    // Subtotal
     doc.setFont(undefined, 'normal');
-    doc.text('Subtotal:', 140, yPos);
+    doc.setFontSize(9);
+    doc.text('Subtotal', 15, yPos);
     doc.text(`$${(invoice.subtotal || 0).toFixed(2)}`, 195, yPos, { align: 'right' });
-    yPos += 7;
+    
+    // Only show tax if it exists
+    if (invoice.tax && invoice.tax > 0) {
+      yPos += 7;
+      doc.text('Tax', 15, yPos);
+      doc.text(`$${invoice.tax.toFixed(2)}`, 195, yPos, { align: 'right' });
+    }
 
-    doc.text('Tax:', 140, yPos);
-    doc.text(`$${(invoice.tax || 0).toFixed(2)}`, 195, yPos, { align: 'right' });
-    yPos += 7;
+    yPos += 15;
 
+    // Total Due - prominent
     doc.setFont(undefined, 'bold');
-    doc.setFontSize(12);
-    doc.text('Total:', 140, yPos);
+    doc.setFontSize(16);
+    doc.text('Total Due', 15, yPos);
     doc.text(`$${(invoice.total || 0).toFixed(2)}`, 195, yPos, { align: 'right' });
 
     // Notes (if exists)
     if (invoice.notes) {
-      yPos += 15;
-      if (yPos > 250) {
+      yPos += 20;
+      if (yPos > 240) {
         doc.addPage();
         yPos = 20;
       }
-      doc.setFontSize(10);
+      doc.setFontSize(9);
       doc.setFont(undefined, 'bold');
       doc.text('Notes:', 15, yPos);
-      yPos += 7;
+      yPos += 6;
       doc.setFont(undefined, 'normal');
+      doc.setTextColor(80, 80, 80);
       const notesLines = doc.splitTextToSize(invoice.notes, 180);
       doc.text(notesLines, 15, yPos);
+      doc.setTextColor(0, 0, 0);
     }
+
+    // Footer - Page number
+    doc.setFontSize(8);
+    doc.setFont(undefined, 'normal');
+    doc.setTextColor(150, 150, 150);
+    doc.text('Page 1 of 1', 195, 285, { align: 'right' });
 
     // Get PDF as base64
     const pdfBase64 = doc.output('datauristring').split(',')[1];
