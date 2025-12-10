@@ -76,10 +76,17 @@ export default function InvoiceManagerDetail() {
     setSendingEmail(true);
     
     try {
-      // Build recipient list
+      // Build recipient list based on send-only-to-secondary flag
       const recipients = [];
-      if (invoice.customer_email) recipients.push(invoice.customer_email);
-      if (invoice.customer_secondary_email) recipients.push(invoice.customer_secondary_email);
+      
+      if (invoice.customer_send_only_to_secondary_email && invoice.customer_secondary_email) {
+        // Send only to secondary email
+        recipients.push(invoice.customer_secondary_email);
+      } else {
+        // Default behavior: primary is main recipient
+        if (invoice.customer_email) recipients.push(invoice.customer_email);
+        // Secondary as CC (handled separately below)
+      }
 
       // Build HTML email body
       const lineItemsHtml = invoice.line_items?.map(item => `
@@ -136,16 +143,22 @@ export default function InvoiceManagerDetail() {
         </div>
       `;
 
-      await base44.integrations.Core.SendEmail({
+      // Prepare email parameters
+      const emailParams = {
         to: recipients.join(', '),
         subject: `Invoice ${invoice.invoice_number}${invoice.title ? ` - ${invoice.title}` : ''}`,
         body: htmlBody
-      });
+      };
 
-      const recipientInfo = recipients.length > 1 
-        ? `Invoice sent to ${recipients.length} recipients` 
-        : 'Invoice sent successfully!';
-      alert(recipientInfo);
+      // Add CC only if NOT using send-only-to-secondary
+      if (!invoice.customer_send_only_to_secondary_email && invoice.customer_secondary_email) {
+        // CC the secondary email
+        emailParams.cc = invoice.customer_secondary_email;
+      }
+
+      await base44.integrations.Core.SendEmail(emailParams);
+
+      alert('Invoice sent successfully!');
       
       // Update status to sent if it's not already paid
       if (invoice.status !== 'paid') {
@@ -267,19 +280,29 @@ export default function InvoiceManagerDetail() {
             <div className="p-4 bg-[#e3e4ed] rounded-lg">
               <p className="font-semibold text-[#414257]">{invoice.customer_name}</p>
               {invoice.customer_email && (
-                <p className="text-sm text-[#5c5f7a] mt-1">
-                  <span className="font-medium">Primary:</span> {invoice.customer_email}
-                </p>
-              )}
-              {invoice.customer_secondary_email && (
-                <p className="text-sm text-[#5c5f7a] mt-1">
-                  <span className="font-medium">Secondary:</span> {invoice.customer_secondary_email}
-                </p>
+                <p className="text-sm text-[#5c5f7a] mt-1">{invoice.customer_email}</p>
               )}
               {invoice.customer_address && (
                 <p className="text-sm text-[#5c5f7a] mt-1">{invoice.customer_address}</p>
               )}
             </div>
+            
+            {/* Email routing info (internal only) */}
+            {invoice.customer_secondary_email && (
+              <div className="mt-3 p-3 bg-blue-50 rounded-lg border border-blue-200">
+                <p className="text-xs font-medium text-blue-800 mb-1">Email Routing</p>
+                {invoice.customer_send_only_to_secondary_email ? (
+                  <p className="text-xs text-blue-700">
+                    Invoices sent only to: <strong>{invoice.customer_secondary_email}</strong>
+                  </p>
+                ) : (
+                  <p className="text-xs text-blue-700">
+                    Primary recipient: <strong>{invoice.customer_email}</strong><br/>
+                    CC: <strong>{invoice.customer_secondary_email}</strong>
+                  </p>
+                )}
+              </div>
+            )}
           </div>
 
           {/* Line Items */}

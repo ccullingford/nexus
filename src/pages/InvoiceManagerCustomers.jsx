@@ -30,6 +30,7 @@ const emptyCustomer = {
   name: '',
   email: '',
   secondary_email: '',
+  send_only_to_secondary_email: false,
   phone: '',
   address: '',
   city: '',
@@ -303,6 +304,26 @@ export default function InvoiceManagerCustomers() {
                   onChange={(e) => setFormData({ ...formData, secondary_email: e.target.value })}
                   placeholder="billing@example.com"
                 />
+              </div>
+
+              <div className="col-span-2">
+                <div className="flex items-start gap-2">
+                  <input
+                    type="checkbox"
+                    id="send_only_to_secondary"
+                    checked={formData.send_only_to_secondary_email || false}
+                    onChange={(e) => setFormData({ ...formData, send_only_to_secondary_email: e.target.checked })}
+                    className="mt-1"
+                  />
+                  <div>
+                    <Label htmlFor="send_only_to_secondary" className="cursor-pointer">
+                      Send invoices only to the secondary email
+                    </Label>
+                    <p className="text-xs text-[#5c5f7a] mt-1">
+                      If checked, invoice emails will go only to the secondary email. The primary email will still be shown on the invoice itself.
+                    </p>
+                  </div>
+                </div>
               </div>
 
               <div className="col-span-2">
