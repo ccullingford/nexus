@@ -254,48 +254,104 @@ export default function InvoiceManagerUpload() {
 
       {/* Upload Step */}
       {(step === 'upload' || step === 'review') && (
-        <Card className="border-0 shadow-sm">
-          <CardHeader>
-            <CardTitle className="text-[#414257]">Upload Receipt File</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="border-2 border-dashed border-[#e3e4ed] rounded-lg p-8 text-center">
-              <FileText className="w-12 h-12 text-[#5c5f7a] mx-auto mb-4" />
-              <p className="text-[#414257] font-medium mb-2">
-                {file ? file.name : 'Choose a file to upload'}
-              </p>
-              <p className="text-sm text-[#5c5f7a] mb-4">
-                Supports PDF, PNG, JPG, JPEG
-              </p>
-              <Input
-                type="file"
-                accept=".pdf,.png,.jpg,.jpeg"
-                onChange={handleFileSelect}
-                className="max-w-xs mx-auto"
-              />
-            </div>
+        <>
+          {receipts.length > 0 && (
+            <Card className="border-0 shadow-sm bg-blue-50">
+              <CardContent className="p-4">
+                <p className="text-blue-800 font-medium">
+                  {receipts.length} receipt{receipts.length > 1 ? 's' : ''} uploaded. Line items will be combined and deduplicated.
+                </p>
+              </CardContent>
+            </Card>
+          )}
 
-            <div className="flex justify-end">
-              <Button
-                onClick={handleUploadAndExtract}
-                disabled={!file || uploading}
-                className="bg-[#414257] hover:bg-[#5c5f7a]"
-              >
-                {uploading ? (
-                  <>
-                    <Loader className="w-4 h-4 mr-2 animate-spin" />
-                    Processing...
-                  </>
-                ) : (
-                  <>
-                    <Upload className="w-4 h-4 mr-2" />
-                    Upload & Extract
-                  </>
+          {receipts.length > 0 && (
+            <Card className="border-0 shadow-sm">
+              <CardHeader>
+                <CardTitle className="text-[#414257]">Uploaded Receipts</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  {receipts.map((receipt) => (
+                    <div key={receipt.id} className="flex items-center justify-between p-3 bg-[#e3e4ed] rounded-lg">
+                      <div className="flex-1">
+                        <p className="font-medium text-[#414257]">{receipt.fileName}</p>
+                        <div className="flex gap-4 mt-1 text-sm text-[#5c5f7a]">
+                          {receipt.vendorName && <span>Vendor: {receipt.vendorName}</span>}
+                          <span>{receipt.lineItems.length} items</span>
+                          {receipt.total && <span>Total: ${receipt.total.toFixed(2)}</span>}
+                        </div>
+                      </div>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => removeReceipt(receipt.id)}
+                        className="text-red-500 hover:text-red-700"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          <Card className="border-0 shadow-sm">
+            <CardHeader>
+              <CardTitle className="text-[#414257]">
+                {receipts.length > 0 ? 'Add Another Receipt' : 'Upload Receipt File'}
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="border-2 border-dashed border-[#e3e4ed] rounded-lg p-8 text-center">
+                <FileText className="w-12 h-12 text-[#5c5f7a] mx-auto mb-4" />
+                <p className="text-[#414257] font-medium mb-2">
+                  {file ? file.name : 'Choose a file to upload'}
+                </p>
+                <p className="text-sm text-[#5c5f7a] mb-4">
+                  Supports PDF, PNG, JPG, JPEG
+                </p>
+                <Input
+                  type="file"
+                  accept=".pdf,.png,.jpg,.jpeg"
+                  onChange={handleFileSelect}
+                  className="max-w-xs mx-auto"
+                />
+              </div>
+
+              <div className="flex justify-end gap-3">
+                {receipts.length > 0 && (
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      setFile(null);
+                    }}
+                  >
+                    Continue to Invoice
+                  </Button>
                 )}
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
+                <Button
+                  onClick={handleUploadAndExtract}
+                  disabled={!file || uploading}
+                  className="bg-[#414257] hover:bg-[#5c5f7a]"
+                >
+                  {uploading ? (
+                    <>
+                      <Loader className="w-4 h-4 mr-2 animate-spin" />
+                      Processing...
+                    </>
+                  ) : (
+                    <>
+                      <Upload className="w-4 h-4 mr-2" />
+                      {receipts.length > 0 ? 'Add Receipt' : 'Upload & Extract'}
+                    </>
+                  )}
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </>
       )}
 
       {/* Review Step */}
