@@ -78,8 +78,8 @@ export default function InvoiceManagerAdmin() {
 
       console.log('Function result:', JSON.stringify(result, null, 2));
 
-      if (!result.success) {
-        throw new Error(result.error || 'Unknown error from sendEmailViaGraph');
+      if (!result.data.success) {
+        throw new Error(result.data.error || 'Unknown error from sendEmailViaGraph');
       }
 
       console.log('=== Email sent successfully ===');
