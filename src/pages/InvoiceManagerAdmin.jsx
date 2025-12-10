@@ -1,0 +1,257 @@
+import React, { useState } from 'react';
+import { ArrowLeft, Send, ShieldCheck, Mail } from 'lucide-react';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { Badge } from '@/components/ui/badge';
+import { base44 } from '@/api/base44Client';
+
+export default function InvoiceManagerAdmin() {
+  const [testEmail, setTestEmail] = useState({
+    to: '',
+    cc: '',
+    subject: 'Test Email from Invoice Manager',
+    message: 'This is a test email from the Invoice Manager admin panel.'
+  });
+  const [sending, setSending] = useState(false);
+
+  // Mock user data (in real app, this would come from useAuth())
+  const user = {
+    id: 'cm',
+    name: 'Chris Cullingford',
+    email: 'cm@cullingford.net',
+    roles: ['super_admin'],
+    permissions: ['invoice-manager:access', 'invoice-manager:write', 'hoa-manager:access']
+  };
+
+  const hasPermission = (permission) => {
+    return user.permissions.includes(permission);
+  };
+
+  const handleSendTestEmail = async (e) => {
+    e.preventDefault();
+    
+    if (!testEmail.to) {
+      alert('Please enter a recipient email address');
+      return;
+    }
+
+    setSending(true);
+
+    try {
+      await base44.integrations.Core.SendEmail({
+        to: testEmail.to,
+        subject: testEmail.subject,
+        body: `
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+            <div style="background: #414257; color: white; padding: 20px; border-radius: 8px 8px 0 0;">
+              <h1 style="margin: 0;">Test Email</h1>
+            </div>
+            <div style="padding: 20px; border: 1px solid #e3e4ed; border-top: none; border-radius: 0 0 8px 8px;">
+              <p style="color: #414257; line-height: 1.6;">${testEmail.message}</p>
+              <hr style="margin: 20px 0; border: none; border-top: 1px solid #e3e4ed;" />
+              <p style="color: #5c5f7a; font-size: 14px;">
+                Sent from Invoice Manager Admin Panel<br/>
+                ${new Date().toLocaleString()}
+              </p>
+            </div>
+          </div>
+        `
+      });
+
+      alert('Test email sent successfully via Microsoft Graph!');
+      
+      // Reset form
+      setTestEmail({
+        ...testEmail,
+        to: '',
+        cc: ''
+      });
+    } catch (error) {
+      console.error('Error sending test email:', error);
+      alert('Failed to send test email: ' + error.message);
+    } finally {
+      setSending(false);
+    }
+  };
+
+  return (
+    <div className="max-w-4xl mx-auto space-y-6">
+      {/* Header */}
+      <div className="flex items-center gap-4">
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => window.history.back()}
+        >
+          <ArrowLeft className="w-5 h-5" />
+        </Button>
+        <div>
+          <h1 className="text-2xl font-bold text-[#414257]">Admin Tools</h1>
+          <p className="text-[#5c5f7a] mt-1">System testing and configuration</p>
+        </div>
+      </div>
+
+      {/* Graph Email Test */}
+      <Card className="border-0 shadow-sm">
+        <CardHeader>
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-lg bg-blue-50 flex items-center justify-center">
+              <Mail className="w-5 h-5 text-blue-600" />
+            </div>
+            <div>
+              <CardTitle className="text-[#414257]">Microsoft Graph Email Test</CardTitle>
+              <CardDescription>Send a test email to verify the integration is working</CardDescription>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <form onSubmit={handleSendTestEmail} className="space-y-4">
+            <div>
+              <Label>To Email *</Label>
+              <Input
+                type="email"
+                value={testEmail.to}
+                onChange={(e) => setTestEmail({ ...testEmail, to: e.target.value })}
+                placeholder="recipient@example.com"
+                required
+              />
+            </div>
+
+            <div>
+              <Label>CC Email (optional)</Label>
+              <Input
+                type="email"
+                value={testEmail.cc}
+                onChange={(e) => setTestEmail({ ...testEmail, cc: e.target.value })}
+                placeholder="cc@example.com"
+              />
+              <p className="text-xs text-[#5c5f7a] mt-1">Leave blank to skip CC</p>
+            </div>
+
+            <div>
+              <Label>Subject *</Label>
+              <Input
+                value={testEmail.subject}
+                onChange={(e) => setTestEmail({ ...testEmail, subject: e.target.value })}
+                placeholder="Test email subject"
+                required
+              />
+            </div>
+
+            <div>
+              <Label>Message</Label>
+              <Textarea
+                value={testEmail.message}
+                onChange={(e) => setTestEmail({ ...testEmail, message: e.target.value })}
+                placeholder="Test message content..."
+                rows={4}
+              />
+            </div>
+
+            <Button
+              type="submit"
+              disabled={sending}
+              className="bg-[#414257] hover:bg-[#5c5f7a]"
+            >
+              <Send className="w-4 h-4 mr-2" />
+              {sending ? 'Sending...' : 'Send Test Email'}
+            </Button>
+          </form>
+        </CardContent>
+      </Card>
+
+      {/* Auth & Permissions Info */}
+      <Card className="border-0 shadow-sm">
+        <CardHeader>
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-lg bg-green-50 flex items-center justify-center">
+              <ShieldCheck className="w-5 h-5 text-green-600" />
+            </div>
+            <div>
+              <CardTitle className="text-[#414257]">Auth & Permissions</CardTitle>
+              <CardDescription>Current user authentication and permission status</CardDescription>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          {/* User Info */}
+          <div>
+            <h3 className="font-semibold text-[#414257] mb-3">Current User</h3>
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-[#5c5f7a]">ID:</span>
+                <span className="font-mono text-sm text-[#414257]">{user.id}</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-[#5c5f7a]">Name:</span>
+                <span className="font-medium text-[#414257]">{user.name}</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-[#5c5f7a]">Email:</span>
+                <span className="text-sm text-[#414257]">{user.email}</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Roles */}
+          <div>
+            <h3 className="font-semibold text-[#414257] mb-3">Roles</h3>
+            <div className="flex flex-wrap gap-2">
+              {user.roles.map((role) => (
+                <Badge key={role} className="bg-[#414257] text-white">
+                  {role.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                </Badge>
+              ))}
+            </div>
+          </div>
+
+          {/* Permissions */}
+          <div>
+            <h3 className="font-semibold text-[#414257] mb-3">Permissions</h3>
+            <div className="space-y-2">
+              {user.permissions.map((permission) => (
+                <div 
+                  key={permission}
+                  className="flex items-center justify-between p-2 bg-[#e3e4ed] rounded-lg"
+                >
+                  <span className="font-mono text-sm text-[#414257]">{permission}</span>
+                  <Badge className="bg-green-100 text-green-800">Granted</Badge>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Invoice Manager Access Status */}
+          <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="font-semibold text-[#414257]">Invoice Manager Access</p>
+                <p className="text-sm text-[#5c5f7a] mt-1">
+                  {hasPermission('invoice-manager:access') 
+                    ? 'Full access to Invoice Manager applet'
+                    : 'No access to Invoice Manager applet'}
+                </p>
+              </div>
+              <Badge className={hasPermission('invoice-manager:access') 
+                ? 'bg-green-100 text-green-800 border-green-200' 
+                : 'bg-red-100 text-red-800 border-red-200'
+              }>
+                {hasPermission('invoice-manager:access') ? 'YES' : 'NO'}
+              </Badge>
+            </div>
+          </div>
+
+          {/* Future Feature Permissions Note */}
+          <div className="p-4 bg-amber-50 rounded-lg border border-amber-200">
+            <p className="text-sm text-amber-800">
+              <strong>Note:</strong> Future feature-level permissions (e.g., <code className="bg-amber-100 px-1 rounded">invoice-manager:read</code> vs <code className="bg-amber-100 px-1 rounded">invoice-manager:write</code>) are not yet implemented but can be added to control specific actions like edit, delete, or send.
+            </p>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}

@@ -61,9 +61,16 @@ export default function InvoiceManager() {
     <div className="max-w-7xl mx-auto space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-[#414257]">Invoice Manager</h1>
-          <p className="text-[#5c5f7a] mt-1">Manage invoices, customers, and billing</p>
+        <div className="flex items-center gap-4">
+          <div>
+            <h1 className="text-2xl font-bold text-[#414257]">Invoice Manager</h1>
+            <p className="text-[#5c5f7a] mt-1">Manage invoices, customers, and billing</p>
+          </div>
+          <Link to={createPageUrl('InvoiceManagerAdmin')}>
+            <Button variant="ghost" size="sm" className="text-[#5c5f7a] hover:text-[#414257]">
+              Admin
+            </Button>
+          </Link>
         </div>
         <div className="flex gap-3">
           <Link to={createPageUrl('InvoiceManagerUpload')}>
