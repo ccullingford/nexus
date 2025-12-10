@@ -7,13 +7,25 @@ Deno.serve(async (req) => {
     
     const user = await base44.auth.me();
     if (!user) {
-      return Response.json({ error: 'Unauthorized' }, { status: 401 });
+      return Response.json({ 
+        success: false,
+        error: 'Unauthorized' 
+      }, { status: 401 });
     }
 
     const { invoice } = await req.json();
 
+    console.log('=== generateInvoicePdf function called ===');
+    console.log('Timestamp:', new Date().toISOString());
+    
+    // VALIDATION: invoice object
     if (!invoice) {
-      throw new Error('Invoice data is required');
+      const error = 'Invoice data is required';
+      console.error('[VALIDATION ERROR]', error);
+      return Response.json({ 
+        success: false,
+        error: error 
+      }, { status: 400 });
     }
 
     console.log('Generating PDF for invoice:', invoice.invoice_number);
@@ -21,14 +33,19 @@ Deno.serve(async (req) => {
     const doc = new jsPDF();
 
     // Fetch and add logo
-    const logoUrl = 'https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/69399eba1974c30a72b7b5de/06e4cf148_NewLogo.png';
-    const logoResponse = await fetch(logoUrl);
-    const logoArrayBuffer = await logoResponse.arrayBuffer();
-    const logoBase64 = btoa(String.fromCharCode(...new Uint8Array(logoArrayBuffer)));
-    const logoDataUrl = `data:image/png;base64,${logoBase64}`;
-    
-    // Add logo (small size, top left)
-    doc.addImage(logoDataUrl, 'PNG', 15, 15, 25, 10);
+    try {
+      const logoUrl = 'https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/69399eba1974c30a72b7b5de/06e4cf148_NewLogo.png';
+      const logoResponse = await fetch(logoUrl);
+      const logoArrayBuffer = await logoResponse.arrayBuffer();
+      const logoBase64 = btoa(String.fromCharCode(...new Uint8Array(logoArrayBuffer)));
+      const logoDataUrl = `data:image/png;base64,${logoBase64}`;
+      
+      // Add logo (small size, top left)
+      doc.addImage(logoDataUrl, 'PNG', 15, 15, 25, 10);
+    } catch (logoError) {
+      console.warn('[LOGO ERROR]', 'Failed to load logo:', logoError.message);
+      // Continue without logo
+    }
 
     // Company Header (top left, next to logo) and Invoice Info (top right)
     doc.setFontSize(11);
@@ -194,7 +211,7 @@ Deno.serve(async (req) => {
     // Get PDF as base64
     const pdfBase64 = doc.output('datauristring').split(',')[1];
 
-    console.log('PDF generated successfully');
+    console.log('=== PDF generated successfully ===', new Date().toISOString());
 
     return Response.json({
       success: true,
@@ -203,7 +220,11 @@ Deno.serve(async (req) => {
     });
 
   } catch (error) {
-    console.error('Error generating PDF:', error);
+    console.error('=== Error in generateInvoicePdf ===');
+    console.error('Timestamp:', new Date().toISOString());
+    console.error('Error:', error.message);
+    console.error('Stack:', error.stack);
+    
     return Response.json({
       success: false,
       error: error.message
