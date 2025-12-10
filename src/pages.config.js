@@ -16,6 +16,8 @@ import InvoiceManagerEdit from './pages/InvoiceManagerEdit';
 import PropertyManagement from './pages/PropertyManagement';
 import PropertyManagementAssociation from './pages/PropertyManagementAssociation';
 import PropertyManagementUnit from './pages/PropertyManagementUnit';
+import PropertyManagementImports from './pages/PropertyManagementImports';
+import PropertyManagementImportsAppFolioHomeownerDirectory from './pages/PropertyManagementImportsAppFolioHomeownerDirectory';
 import __Layout from './Layout.jsx';
 
 
@@ -38,6 +40,8 @@ export const PAGES = {
     "PropertyManagement": PropertyManagement,
     "PropertyManagementAssociation": PropertyManagementAssociation,
     "PropertyManagementUnit": PropertyManagementUnit,
+    "PropertyManagementImports": PropertyManagementImports,
+    "PropertyManagementImportsAppFolioHomeownerDirectory": PropertyManagementImportsAppFolioHomeownerDirectory,
 }
 
 export const pagesConfig = {
