@@ -53,6 +53,31 @@ export default function InvoiceManagerCustomers() {
     queryFn: () => base44.entities.Customer.list('name', 500),
   });
 
+  const { data: associationForPreload } = useQuery({
+    queryKey: ['association', createForAssociationId],
+    queryFn: async () => {
+      const associations = await base44.entities.Association.filter({ id: createForAssociationId });
+      return associations[0];
+    },
+    enabled: !!createForAssociationId
+  });
+
+  React.useEffect(() => {
+    if (createForAssociationId && associationForPreload && !showDialog) {
+      setFormData({
+        ...emptyCustomer,
+        type: 'association',
+        association_id: createForAssociationId,
+        name: associationForPreload.name,
+        address: associationForPreload.street_address || '',
+        city: associationForPreload.city || '',
+        state: associationForPreload.state || '',
+        zip: associationForPreload.zip || ''
+      });
+      setShowDialog(true);
+    }
+  }, [createForAssociationId, associationForPreload, showDialog]);
+
   const createCustomerMutation = useMutation({
     mutationFn: (data) => base44.entities.Customer.create(data),
     onSuccess: () => {

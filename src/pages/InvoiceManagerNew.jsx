@@ -2,5 +2,8 @@ import React from 'react';
 import InvoiceForm from '@/components/invoice/InvoiceForm';
 
 export default function InvoiceManagerNew() {
-  return <InvoiceForm mode="create" />;
+  const params = new URLSearchParams(window.location.search);
+  const customerId = params.get('customerId');
+  
+  return <InvoiceForm mode="create" preselectedCustomerId={customerId} />;
 }

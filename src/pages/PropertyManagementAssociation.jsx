@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import { createPageUrl } from '@/utils';
-import { ArrowLeft, Plus, Edit, Users, Home, Building } from 'lucide-react';
+import { ArrowLeft, Plus, Edit, Users, Home, Building, FileText, DollarSign } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -53,6 +53,23 @@ export default function PropertyManagementAssociation() {
     queryKey: ['tenants', associationId],
     queryFn: () => base44.entities.Tenant.filter({ association_id: associationId }, 'last_name', 500),
     enabled: !!associationId
+  });
+
+  const { data: customers = [] } = useQuery({
+    queryKey: ['associationCustomers', associationId],
+    queryFn: () => base44.entities.Customer.filter({ association_id: associationId, type: 'association' }, 'name', 500),
+    enabled: !!associationId
+  });
+
+  const { data: invoices = [] } = useQuery({
+    queryKey: ['associationInvoices', associationId],
+    queryFn: async () => {
+      const customerIds = customers.map(c => c.id);
+      if (customerIds.length === 0) return [];
+      const allInvoices = await base44.entities.Invoice.list('-created_date', 200);
+      return allInvoices.filter(inv => customerIds.includes(inv.customer_id));
+    },
+    enabled: !!associationId && customers.length > 0
   });
 
   const getOwnerForUnit = (unitId) => {
@@ -108,16 +125,20 @@ export default function PropertyManagementAssociation() {
 
       {/* Tabs */}
       <Tabs defaultValue="units" className="space-y-6">
-        <TabsList>
-          <TabsTrigger value="units" className="flex items-center gap-2">
-            <Home className="w-4 h-4" />
-            Units ({units.length})
-          </TabsTrigger>
-          <TabsTrigger value="people" className="flex items-center gap-2">
-            <Users className="w-4 h-4" />
-            People ({owners.length + tenants.length})
-          </TabsTrigger>
-        </TabsList>
+      <TabsList>
+        <TabsTrigger value="units" className="flex items-center gap-2">
+          <Home className="w-4 h-4" />
+          Units ({units.length})
+        </TabsTrigger>
+        <TabsTrigger value="people" className="flex items-center gap-2">
+          <Users className="w-4 h-4" />
+          People ({owners.length + tenants.length})
+        </TabsTrigger>
+        <TabsTrigger value="billing" className="flex items-center gap-2">
+          <FileText className="w-4 h-4" />
+          Billing
+        </TabsTrigger>
+      </TabsList>
 
         {/* Units Tab */}
         <TabsContent value="units" className="space-y-4">
@@ -274,6 +295,134 @@ export default function PropertyManagementAssociation() {
                             {tenant.is_current && (
                               <Badge className="bg-green-100 text-green-800 border-green-200">Current</Badge>
                             )}
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* Billing Tab */}
+        <TabsContent value="billing" className="space-y-4">
+          {/* Billing Profiles (Customers) */}
+          <Card className="border-0 shadow-sm">
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle className="text-[#414257]">Billing Profiles</CardTitle>
+                  <p className="text-sm text-[#5c5f7a] mt-1">Customer records for invoicing this association</p>
+                </div>
+                <Button
+                  onClick={() => window.location.href = createPageUrl('InvoiceManagerCustomers') + `?createForAssociation=${associationId}`}
+                  className="bg-[#414257] hover:bg-[#5c5f7a]"
+                  size="sm"
+                >
+                  <Plus className="w-4 h-4 mr-2" />
+                  Add Billing Profile
+                </Button>
+              </div>
+            </CardHeader>
+            <CardContent>
+              {customers.length === 0 ? (
+                <div className="text-center py-8">
+                  <DollarSign className="w-12 h-12 text-[#5c5f7a] mx-auto mb-3" />
+                  <p className="text-[#5c5f7a] mb-4">No billing profiles yet</p>
+                  <p className="text-sm text-[#5c5f7a] mb-4">
+                    Create a customer profile to start invoicing this association
+                  </p>
+                  <Button
+                    onClick={() => window.location.href = createPageUrl('InvoiceManagerCustomers') + `?createForAssociation=${associationId}`}
+                    variant="outline"
+                  >
+                    Create First Billing Profile
+                  </Button>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {customers.map((customer) => (
+                    <div key={customer.id} className="p-4 bg-[#e3e4ed] rounded-lg flex items-start justify-between">
+                      <div>
+                        <p className="font-semibold text-[#414257]">{customer.name}</p>
+                        <div className="mt-2 space-y-1 text-sm text-[#5c5f7a]">
+                          {customer.email && <p>Email: {customer.email}</p>}
+                          {customer.phone && <p>Phone: {customer.phone}</p>}
+                          {customer.address && (
+                            <p>
+                              Address: {customer.address}
+                              {customer.city && `, ${customer.city}`}
+                              {customer.state && `, ${customer.state}`}
+                              {customer.zip && ` ${customer.zip}`}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => window.location.href = createPageUrl('InvoiceManagerNew') + `?customerId=${customer.id}`}
+                      >
+                        <Plus className="w-4 h-4 mr-1" />
+                        New Invoice
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Recent Invoices */}
+          <Card className="border-0 shadow-sm">
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-[#414257]">Recent Invoices</CardTitle>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => window.location.href = createPageUrl('InvoiceManagerInvoices')}
+                >
+                  View All
+                </Button>
+              </div>
+            </CardHeader>
+            <CardContent>
+              {invoices.length === 0 ? (
+                <div className="text-center py-8 text-[#5c5f7a]">
+                  No invoices yet
+                </div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Invoice #</TableHead>
+                        <TableHead>Customer</TableHead>
+                        <TableHead>Date</TableHead>
+                        <TableHead>Total</TableHead>
+                        <TableHead>Status</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {invoices.slice(0, 5).map((invoice) => (
+                        <TableRow
+                          key={invoice.id}
+                          className="cursor-pointer hover:bg-[#f8f8fb]"
+                          onClick={() => window.location.href = createPageUrl('InvoiceManagerDetail') + `?id=${invoice.id}`}
+                        >
+                          <TableCell className="font-medium">{invoice.invoice_number}</TableCell>
+                          <TableCell>{invoice.customer_name}</TableCell>
+                          <TableCell>
+                            {invoice.issue_date ? new Date(invoice.issue_date).toLocaleDateString() : '—'}
+                          </TableCell>
+                          <TableCell className="font-semibold">${(invoice.total || 0).toFixed(2)}</TableCell>
+                          <TableCell>
+                            <Badge className={`${statusColors[invoice.status]} border capitalize`}>
+                              {invoice.status}
+                            </Badge>
                           </TableCell>
                         </TableRow>
                       ))}
