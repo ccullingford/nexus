@@ -29,6 +29,7 @@ const typeColors = {
 const emptyCustomer = {
   name: '',
   email: '',
+  secondary_email: '',
   phone: '',
   address: '',
   city: '',
@@ -276,12 +277,22 @@ export default function InvoiceManagerCustomers() {
               </div>
 
               <div>
-                <Label>Email</Label>
+                <Label>Primary Email</Label>
                 <Input
                   type="email"
                   value={formData.email}
                   onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                   placeholder="email@example.com"
+                />
+              </div>
+
+              <div>
+                <Label>Secondary Email (Invoice Delivery)</Label>
+                <Input
+                  type="email"
+                  value={formData.secondary_email}
+                  onChange={(e) => setFormData({ ...formData, secondary_email: e.target.value })}
+                  placeholder="billing@example.com"
                 />
               </div>
 

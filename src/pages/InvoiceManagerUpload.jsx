@@ -170,6 +170,7 @@ export default function InvoiceManagerUpload() {
       customer_id: selectedCustomer.id,
       customer_name: selectedCustomer.name,
       customer_email: selectedCustomer.email || '',
+      customer_secondary_email: selectedCustomer.secondary_email || '',
       customer_address: customerAddress,
       title: formData.title,
       issue_date: formData.issue_date,

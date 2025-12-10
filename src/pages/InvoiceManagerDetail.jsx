@@ -68,7 +68,7 @@ export default function InvoiceManagerDetail() {
   };
 
   const handleSendEmail = async () => {
-    if (!invoice.customer_email) {
+    if (!invoice.customer_email && !invoice.customer_secondary_email) {
       alert('No email address for this customer');
       return;
     }
@@ -76,6 +76,11 @@ export default function InvoiceManagerDetail() {
     setSendingEmail(true);
     
     try {
+      // Build recipient list
+      const recipients = [];
+      if (invoice.customer_email) recipients.push(invoice.customer_email);
+      if (invoice.customer_secondary_email) recipients.push(invoice.customer_secondary_email);
+
       // Build HTML email body
       const lineItemsHtml = invoice.line_items?.map(item => `
         <tr>
@@ -132,12 +137,15 @@ export default function InvoiceManagerDetail() {
       `;
 
       await base44.integrations.Core.SendEmail({
-        to: invoice.customer_email,
+        to: recipients.join(', '),
         subject: `Invoice ${invoice.invoice_number}${invoice.title ? ` - ${invoice.title}` : ''}`,
         body: htmlBody
       });
 
-      alert('Invoice sent successfully!');
+      const recipientInfo = recipients.length > 1 
+        ? `Invoice sent to ${recipients.length} recipients` 
+        : 'Invoice sent successfully!';
+      alert(recipientInfo);
       
       // Update status to sent if it's not already paid
       if (invoice.status !== 'paid') {
@@ -213,7 +221,7 @@ export default function InvoiceManagerDetail() {
             <Button
               variant="outline"
               onClick={handleSendEmail}
-              disabled={!invoice.customer_email || sendingEmail}
+              disabled={(!invoice.customer_email && !invoice.customer_secondary_email) || sendingEmail}
               className="bg-white"
             >
               <Mail className="w-4 h-4 mr-2" />
@@ -259,7 +267,14 @@ export default function InvoiceManagerDetail() {
             <div className="p-4 bg-[#e3e4ed] rounded-lg">
               <p className="font-semibold text-[#414257]">{invoice.customer_name}</p>
               {invoice.customer_email && (
-                <p className="text-sm text-[#5c5f7a] mt-1">{invoice.customer_email}</p>
+                <p className="text-sm text-[#5c5f7a] mt-1">
+                  <span className="font-medium">Primary:</span> {invoice.customer_email}
+                </p>
+              )}
+              {invoice.customer_secondary_email && (
+                <p className="text-sm text-[#5c5f7a] mt-1">
+                  <span className="font-medium">Secondary:</span> {invoice.customer_secondary_email}
+                </p>
               )}
               {invoice.customer_address && (
                 <p className="text-sm text-[#5c5f7a] mt-1">{invoice.customer_address}</p>

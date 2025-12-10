@@ -98,6 +98,7 @@ export default function InvoiceManagerNew() {
       customer_id: selectedCustomer.id,
       customer_name: selectedCustomer.name,
       customer_email: selectedCustomer.email || '',
+      customer_secondary_email: selectedCustomer.secondary_email || '',
       customer_address: customerAddress,
       title: formData.title,
       issue_date: formData.issue_date,
@@ -156,7 +157,16 @@ export default function InvoiceManagerNew() {
             {selectedCustomer && (
               <div className="p-4 bg-[#e3e4ed] rounded-lg">
                 <p className="font-medium text-[#414257]">{selectedCustomer.name}</p>
-                {selectedCustomer.email && <p className="text-sm text-[#5c5f7a]">{selectedCustomer.email}</p>}
+                {selectedCustomer.email && (
+                  <p className="text-sm text-[#5c5f7a]">
+                    <span className="font-medium">Primary:</span> {selectedCustomer.email}
+                  </p>
+                )}
+                {selectedCustomer.secondary_email && (
+                  <p className="text-sm text-[#5c5f7a]">
+                    <span className="font-medium">Secondary:</span> {selectedCustomer.secondary_email}
+                  </p>
+                )}
                 {selectedCustomer.address && (
                   <p className="text-sm text-[#5c5f7a] mt-1">
                     {selectedCustomer.address}
