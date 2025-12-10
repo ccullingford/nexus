@@ -83,22 +83,34 @@ export default function InvoiceManagerCustomers() {
   }, [createForAssociationId, associationForPreload, dialogOpen]);
 
   const createCustomerMutation = useMutation({
-    mutationFn: (data) => base44.entities.Customer.create(data),
+    mutationFn: async (data) => {
+      return await base44.entities.Customer.create(data);
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['customers'] });
       setDialogOpen(false);
       setFormData(emptyCustomer);
     },
+    onError: (error) => {
+      console.error('Error creating customer:', error);
+      alert('Failed to create customer: ' + error.message);
+    }
   });
 
   const updateCustomerMutation = useMutation({
-    mutationFn: ({ id, data }) => base44.entities.Customer.update(id, data),
+    mutationFn: async ({ id, data }) => {
+      return await base44.entities.Customer.update(id, data);
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['customers'] });
       setDialogOpen(false);
       setEditingCustomer(null);
       setFormData(emptyCustomer);
     },
+    onError: (error) => {
+      console.error('Error updating customer:', error);
+      alert('Failed to update customer: ' + error.message);
+    }
   });
 
   const deleteCustomerMutation = useMutation({
