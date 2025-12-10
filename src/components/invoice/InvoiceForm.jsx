@@ -18,7 +18,7 @@ function canEditInvoice(invoice, user) {
   return true;
 }
 
-export default function InvoiceForm({ mode = 'create', invoiceId }) {
+export default function InvoiceForm({ mode = 'create', invoiceId, preselectedCustomerId }) {
   const queryClient = useQueryClient();
   
   const { data: customers = [] } = useQuery({
@@ -35,7 +35,7 @@ export default function InvoiceForm({ mode = 'create', invoiceId }) {
     enabled: mode === 'edit' && !!invoiceId,
   });
 
-  const [selectedCustomerId, setSelectedCustomerId] = useState('');
+  const [selectedCustomerId, setSelectedCustomerId] = useState(preselectedCustomerId || '');
   const [formData, setFormData] = useState({
     title: '',
     issue_date: format(new Date(), 'yyyy-MM-dd'),
@@ -61,6 +61,13 @@ export default function InvoiceForm({ mode = 'create', invoiceId }) {
       });
     }
   }, [mode, existingInvoice]);
+
+  // Set preselected customer in create mode
+  useEffect(() => {
+    if (mode === 'create' && preselectedCustomerId) {
+      setSelectedCustomerId(preselectedCustomerId);
+    }
+  }, [mode, preselectedCustomerId]);
 
   const selectedCustomer = customers.find(c => c.id === selectedCustomerId);
 
