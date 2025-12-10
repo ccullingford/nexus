@@ -80,11 +80,11 @@ export default function InvoiceManagerDetail() {
 
   const handleConfirmSend = async () => {
     setSendingEmail(true);
-    
+
     try {
       // Build recipient list based on send-only-to-secondary flag
       const recipients = [];
-      
+
       if (invoice.customer_send_only_to_secondary_email && invoice.customer_secondary_email) {
         // Send only to secondary email
         recipients.push(invoice.customer_secondary_email);
@@ -94,82 +94,62 @@ export default function InvoiceManagerDetail() {
         // Secondary as CC (handled separately below)
       }
 
-      // Build HTML email body
-      const lineItemsHtml = invoice.line_items?.map(item => `
-        <tr>
-          <td style="padding: 8px; border-bottom: 1px solid #eee;">${item.description}</td>
-          <td style="padding: 8px; border-bottom: 1px solid #eee; text-align: center;">${item.quantity}</td>
-          <td style="padding: 8px; border-bottom: 1px solid #eee; text-align: right;">$${item.price?.toFixed(2)}</td>
-          <td style="padding: 8px; border-bottom: 1px solid #eee; text-align: right; font-weight: 600;">$${item.amount?.toFixed(2)}</td>
-        </tr>
-      `).join('');
+      // Generate PDF
+      console.log('Generating PDF for invoice...');
+      const pdfResult = await base44.functions.invoke('generateInvoicePdf', { invoice });
 
+      if (!pdfResult.data.success) {
+        throw new Error(pdfResult.data.error || 'Failed to generate PDF');
+      }
+
+      const { pdfBase64, fileName } = pdfResult.data;
+      console.log('PDF generated:', fileName);
+
+      // Build HTML email body
       const htmlBody = `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
           <div style="background: #414257; color: white; padding: 20px; border-radius: 8px 8px 0 0;">
             <h1 style="margin: 0;">Invoice ${invoice.invoice_number}</h1>
           </div>
-          
+
           <div style="padding: 20px; border: 1px solid #e3e4ed; border-top: none; border-radius: 0 0 8px 8px;">
             ${invoice.title ? `<h2 style="color: #414257; margin-top: 0;">${invoice.title}</h2>` : ''}
-            
-            <div style="margin: 20px 0;">
-              <p><strong>Bill To:</strong></p>
-              <p style="margin: 5px 0;">${invoice.customer_name}</p>
-              ${invoice.customer_address ? `<p style="margin: 5px 0; color: #5c5f7a;">${invoice.customer_address}</p>` : ''}
+
+            <p style="color: #414257;">Dear ${invoice.customer_name},</p>
+
+            <p style="color: #414257;">Please find attached your invoice for the amount of <strong>$${invoice.total?.toFixed(2)}</strong>.</p>
+
+            <div style="margin: 20px 0; padding: 15px; background: #f8f8fb; border-radius: 6px;">
+              <p style="margin: 5px 0;"><strong>Invoice Number:</strong> ${invoice.invoice_number}</p>
+              <p style="margin: 5px 0;"><strong>Issue Date:</strong> ${invoice.issue_date ? format(new Date(invoice.issue_date), 'MMMM d, yyyy') : 'N/A'}</p>
+              <p style="margin: 5px 0;"><strong>Due Date:</strong> ${invoice.due_date ? format(new Date(invoice.due_date), 'MMMM d, yyyy') : 'N/A'}</p>
+              <p style="margin: 5px 0;"><strong>Amount Due:</strong> $${invoice.total?.toFixed(2)}</p>
             </div>
 
-            <div style="margin: 20px 0;">
-              <p><strong>Issue Date:</strong> ${invoice.issue_date ? format(new Date(invoice.issue_date), 'MMMM d, yyyy') : 'N/A'}</p>
-              <p><strong>Due Date:</strong> ${invoice.due_date ? format(new Date(invoice.due_date), 'MMMM d, yyyy') : 'N/A'}</p>
-            </div>
+            ${invoice.notes ? `<div style="margin: 20px 0; padding: 15px; background: #fffbf0; border-left: 4px solid #f59e0b; border-radius: 6px;"><p style="margin: 0;"><strong>Additional Notes:</strong></p><p style="margin: 5px 0;">${invoice.notes}</p></div>` : ''}
 
-            <table style="width: 100%; border-collapse: collapse; margin: 20px 0;">
-              <thead>
-                <tr style="background: #f8f8fb;">
-                  <th style="padding: 12px 8px; text-align: left; border-bottom: 2px solid #414257;">Description</th>
-                  <th style="padding: 12px 8px; text-align: center; border-bottom: 2px solid #414257;">Qty</th>
-                  <th style="padding: 12px 8px; text-align: right; border-bottom: 2px solid #414257;">Price</th>
-                  <th style="padding: 12px 8px; text-align: right; border-bottom: 2px solid #414257;">Amount</th>
-                </tr>
-              </thead>
-              <tbody>
-                ${lineItemsHtml}
-              </tbody>
-            </table>
-
-            <div style="text-align: right; margin: 20px 0;">
-              <p style="margin: 5px 0;">Subtotal: $${invoice.subtotal?.toFixed(2)}</p>
-              <p style="margin: 5px 0;">Tax: $${invoice.tax?.toFixed(2)}</p>
-              <p style="margin: 10px 0; font-size: 18px; font-weight: bold; color: #414257;">Total: $${invoice.total?.toFixed(2)}</p>
-            </div>
-
-            ${invoice.notes ? `<div style="margin: 20px 0; padding: 15px; background: #f8f8fb; border-radius: 6px;"><p style="margin: 0;"><strong>Notes:</strong></p><p style="margin: 5px 0;">${invoice.notes}</p></div>` : ''}
+            <p style="color: #5c5f7a; font-size: 14px; margin-top: 30px;">
+              If you have any questions about this invoice, please contact us.
+            </p>
           </div>
         </div>
       `;
 
-      // Prepare email parameters
-      const emailParams = {
-        to: recipients.join(', '),
-        subject: `Invoice ${invoice.invoice_number}${invoice.title ? ` - ${invoice.title}` : ''}`,
-        body: htmlBody
-      };
-
-      // Add CC only if NOT using send-only-to-secondary
-      if (!invoice.customer_send_only_to_secondary_email && invoice.customer_secondary_email) {
-        // CC the secondary email
-        emailParams.cc = invoice.customer_secondary_email;
-      }
-
-      // Send via Microsoft Graph
+      // Send via Microsoft Graph with PDF attachment
       const result = await base44.functions.invoke('sendEmailViaGraph', {
         to: recipients,
         cc: !invoice.customer_send_only_to_secondary_email && invoice.customer_secondary_email 
           ? [invoice.customer_secondary_email] 
           : undefined,
-        subject: emailParams.subject,
-        htmlBody: emailParams.body
+        subject: `Invoice ${invoice.invoice_number}${invoice.title ? ` - ${invoice.title}` : ''}`,
+        htmlBody: htmlBody,
+        attachments: [
+          {
+            fileName: fileName,
+            contentType: 'application/pdf',
+            contentBytes: pdfBase64
+          }
+        ]
       });
 
       if (!result.data.success) {

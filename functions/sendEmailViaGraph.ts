@@ -5,10 +5,17 @@ Deno.serve(async (req) => {
     const base44 = createClientFromRequest(req);
     
     // Parse request body
-    const { to, cc, subject, htmlBody, textBody } = await req.json();
+    const { to, cc, subject, htmlBody, textBody, attachments } = await req.json();
     
     console.log('=== sendEmailViaGraph function called ===');
-    console.log('Parameters received:', { to, cc, subject, hasHtmlBody: !!htmlBody, hasTextBody: !!textBody });
+    console.log('Parameters received:', { 
+      to, 
+      cc, 
+      subject, 
+      hasHtmlBody: !!htmlBody, 
+      hasTextBody: !!textBody,
+      attachmentCount: attachments?.length || 0 
+    });
     
     // Validate required parameters
     if (!to || !Array.isArray(to) || to.length === 0) {
@@ -82,6 +89,17 @@ Deno.serve(async (req) => {
       message.ccRecipients = cc.map(email => ({
         emailAddress: { address: email }
       }));
+    }
+
+    // Add attachments if provided
+    if (attachments && Array.isArray(attachments) && attachments.length > 0) {
+      message.attachments = attachments.map(attachment => ({
+        '@odata.type': '#microsoft.graph.fileAttachment',
+        name: attachment.fileName,
+        contentType: attachment.contentType || 'application/pdf',
+        contentBytes: attachment.contentBytes
+      }));
+      console.log(`Added ${attachments.length} attachment(s)`);
     }
 
     // Send email via Microsoft Graph API using the sender address
