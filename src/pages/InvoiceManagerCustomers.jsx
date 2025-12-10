@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import { Search, Plus, Edit, Trash2, X } from 'lucide-react';
@@ -42,6 +42,9 @@ const emptyCustomer = {
 
 export default function InvoiceManagerCustomers() {
   const queryClient = useQueryClient();
+  const params = new URLSearchParams(window.location.search);
+  const createForAssociationId = params.get('createForAssociation');
+  
   const [searchTerm, setSearchTerm] = useState('');
   const [typeFilter, setTypeFilter] = useState('all');
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -62,8 +65,8 @@ export default function InvoiceManagerCustomers() {
     enabled: !!createForAssociationId
   });
 
-  React.useEffect(() => {
-    if (createForAssociationId && associationForPreload && !showDialog) {
+  useEffect(() => {
+    if (createForAssociationId && associationForPreload && !dialogOpen) {
       setFormData({
         ...emptyCustomer,
         type: 'association',
@@ -74,9 +77,9 @@ export default function InvoiceManagerCustomers() {
         state: associationForPreload.state || '',
         zip: associationForPreload.zip || ''
       });
-      setShowDialog(true);
+      setDialogOpen(true);
     }
-  }, [createForAssociationId, associationForPreload, showDialog]);
+  }, [createForAssociationId, associationForPreload, dialogOpen]);
 
   const createCustomerMutation = useMutation({
     mutationFn: (data) => base44.entities.Customer.create(data),
