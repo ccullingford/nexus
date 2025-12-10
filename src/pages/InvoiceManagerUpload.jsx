@@ -36,10 +36,87 @@ export default function InvoiceManagerUpload() {
   });
 
   const handleFileSelect = (e) => {
-    const selectedFile = e.target.files[0];
-    if (selectedFile) {
-      setFile(selectedFile);
+    const selectedFiles = Array.from(e.target.files);
+    if (selectedFiles.length > 0) {
+      // Process all files at once
+      processMultipleFiles(selectedFiles);
     }
+  };
+
+  const processMultipleFiles = async (files) => {
+    setUploading(true);
+    const newReceipts = [];
+
+    for (const file of files) {
+      try {
+        // Upload file
+        const { file_url } = await base44.integrations.Core.UploadFile({ file });
+
+        // Extract data
+        const result = await base44.integrations.Core.ExtractDataFromUploadedFile({
+          file_url,
+          json_schema: {
+            type: 'object',
+            properties: {
+              vendor_name: { type: 'string' },
+              invoice_date: { type: 'string' },
+              subtotal: { type: 'number' },
+              tax: { type: 'number' },
+              total: { type: 'number' },
+              line_items: {
+                type: 'array',
+                items: {
+                  type: 'object',
+                  properties: {
+                    description: { type: 'string' },
+                    quantity: { type: 'number' },
+                    price: { type: 'number' },
+                    amount: { type: 'number' }
+                  }
+                }
+              }
+            }
+          }
+        });
+
+        if (result.status === 'success' && result.output) {
+          const newReceipt = {
+            id: `receipt-${Date.now()}-${Math.random()}`,
+            fileName: file.name,
+            receiptUrl: file_url,
+            vendorName: result.output.vendor_name || '',
+            invoiceDate: result.output.invoice_date || '',
+            subtotal: result.output.subtotal || 0,
+            tax: result.output.tax || 0,
+            total: result.output.total || 0,
+            lineItems: result.output.line_items || []
+          };
+          newReceipts.push(newReceipt);
+        }
+      } catch (error) {
+        console.error('Error processing file:', file.name, error);
+      }
+    }
+
+    if (newReceipts.length > 0) {
+      const updatedReceipts = [...receipts, ...newReceipts];
+      setReceipts(updatedReceipts);
+
+      // Auto-set form title from first receipt
+      if (receipts.length === 0 && newReceipts[0].vendorName) {
+        setFormData(prev => ({ ...prev, title: newReceipts[0].vendorName }));
+      }
+
+      // Calculate combined tax from all receipts
+      const combinedTax = updatedReceipts.reduce((sum, r) => sum + (r.tax || 0), 0);
+      setFormData(prev => ({ ...prev, tax: combinedTax }));
+
+      if (receipts.length === 0) {
+        setStep('review');
+      }
+    }
+
+    setUploading(false);
   };
 
   const handleUploadAndExtract = async () => {
