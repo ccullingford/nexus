@@ -41,10 +41,17 @@ export default function InvoiceManagerAdmin() {
     setSending(true);
 
     try {
-      await base44.integrations.Core.SendEmail({
-        to: testEmail.to,
+      console.log('=== Starting test email send ===');
+      console.log('Recipient:', testEmail.to);
+      console.log('CC:', testEmail.cc || '(none)');
+      console.log('Subject:', testEmail.subject);
+      console.log('Timestamp:', new Date().toISOString());
+
+      const emailPayload = {
+        to: [testEmail.to],
+        cc: testEmail.cc ? [testEmail.cc] : undefined,
         subject: testEmail.subject,
-        body: `
+        htmlBody: `
           <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
             <div style="background: #414257; color: white; padding: 20px; border-radius: 8px 8px 0 0;">
               <h1 style="margin: 0;">Test Email</h1>
@@ -59,8 +66,23 @@ export default function InvoiceManagerAdmin() {
             </div>
           </div>
         `
-      });
+      };
 
+      console.log('Calling sendEmailViaGraph function...');
+      console.log('Payload:', JSON.stringify({
+        ...emailPayload,
+        htmlBody: '(HTML content omitted from log)'
+      }, null, 2));
+
+      const result = await base44.functions.invoke('sendEmailViaGraph', emailPayload);
+
+      console.log('Function result:', JSON.stringify(result, null, 2));
+
+      if (!result.success) {
+        throw new Error(result.error || 'Unknown error from sendEmailViaGraph');
+      }
+
+      console.log('=== Email sent successfully ===');
       alert('Test email sent successfully via Microsoft Graph!');
       
       // Reset form
@@ -70,7 +92,10 @@ export default function InvoiceManagerAdmin() {
         cc: ''
       });
     } catch (error) {
-      console.error('Error sending test email:', error);
+      console.error('=== Error sending test email ===');
+      console.error('Error type:', error.constructor.name);
+      console.error('Error message:', error.message);
+      console.error('Full error:', error);
       alert('Failed to send test email: ' + error.message);
     } finally {
       setSending(false);
