@@ -164,13 +164,20 @@ export default function Layout({ children, currentPageName }) {
               <button className="w-10 h-10 rounded-full bg-[#414257] text-white font-semibold flex items-center justify-center hover:bg-[#5c5f7a] transition-colors">
                 {user.initials}
               </button>
-              
+
               {/* Dropdown */}
-              <div className="absolute right-0 top-full mt-2 w-48 py-2 bg-white rounded-xl shadow-xl border border-gray-100 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200">
+              <div className="absolute right-0 top-full mt-2 w-56 py-2 bg-white rounded-xl shadow-xl border border-gray-100 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
                 <div className="px-4 py-2 border-b border-gray-100 sm:hidden">
                   <p className="text-sm font-medium text-[#414257]">{user.name}</p>
                   <p className="text-xs text-[#5c5f7a]">{user.email}</p>
                 </div>
+                <Link 
+                  to={createPageUrl('InvoiceManagerAdmin')}
+                  className="w-full px-4 py-2 text-left text-sm text-[#414257] hover:bg-gray-50 flex items-center gap-2"
+                >
+                  <FileText className="w-4 h-4" />
+                  Invoice Manager Admin
+                </Link>
                 <button className="w-full px-4 py-2 text-left text-sm text-[#414257] hover:bg-gray-50 flex items-center gap-2">
                   <LogOut className="w-4 h-4" />
                   Sign out

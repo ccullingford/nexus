@@ -162,7 +162,19 @@ export default function InvoiceManagerDetail() {
         emailParams.cc = invoice.customer_secondary_email;
       }
 
-      await base44.integrations.Core.SendEmail(emailParams);
+      // Send via Microsoft Graph
+      const result = await base44.functions.invoke('sendEmailViaGraph', {
+        to: recipients,
+        cc: !invoice.customer_send_only_to_secondary_email && invoice.customer_secondary_email 
+          ? [invoice.customer_secondary_email] 
+          : undefined,
+        subject: emailParams.subject,
+        htmlBody: emailParams.body
+      });
+
+      if (!result.success) {
+        throw new Error(result.error || 'Failed to send email');
+      }
 
       // Update status to sent if not already paid
       if (invoice.status !== 'paid') {
