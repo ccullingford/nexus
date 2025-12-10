@@ -457,21 +457,27 @@ export default function InvoiceManagerDetail() {
             </div>
           )}
 
-          {/* Source Document */}
+          {/* Source Documents */}
           {invoice.receipt_url && (
             <div>
-              <p className="text-sm text-[#5c5f7a] mb-2">Source Document</p>
-              <div className="p-4 bg-[#e3e4ed] rounded-lg">
-                <a
-                  href={invoice.receipt_url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-2 text-[#414257] hover:text-[#5c5f7a] font-medium"
-                >
-                  <FileText className="w-4 h-4" />
-                  View Uploaded Receipt
-                  <ExternalLink className="w-3 h-3" />
-                </a>
+              <p className="text-sm text-[#5c5f7a] mb-2">
+                Source Document{invoice.receipt_url.includes('\n') ? 's' : ''}
+              </p>
+              <div className="space-y-2">
+                {invoice.receipt_url.split('\n').map((url, index) => (
+                  <div key={index} className="p-4 bg-[#e3e4ed] rounded-lg">
+                    <a
+                      href={url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-2 text-[#414257] hover:text-[#5c5f7a] font-medium"
+                    >
+                      <FileText className="w-4 h-4" />
+                      Receipt {invoice.receipt_url.includes('\n') ? `#${index + 1}` : ''}
+                      <ExternalLink className="w-3 h-3" />
+                    </a>
+                  </div>
+                ))}
               </div>
             </div>
           )}
