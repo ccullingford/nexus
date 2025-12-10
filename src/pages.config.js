@@ -13,6 +13,9 @@ import InvoiceManagerCustomers from './pages/InvoiceManagerCustomers';
 import InvoiceManagerUpload from './pages/InvoiceManagerUpload';
 import InvoiceManagerAdmin from './pages/InvoiceManagerAdmin';
 import InvoiceManagerEdit from './pages/InvoiceManagerEdit';
+import PropertyManagement from './pages/PropertyManagement';
+import PropertyManagementAssociation from './pages/PropertyManagementAssociation';
+import PropertyManagementUnit from './pages/PropertyManagementUnit';
 import __Layout from './Layout.jsx';
 
 
@@ -32,6 +35,9 @@ export const PAGES = {
     "InvoiceManagerUpload": InvoiceManagerUpload,
     "InvoiceManagerAdmin": InvoiceManagerAdmin,
     "InvoiceManagerEdit": InvoiceManagerEdit,
+    "PropertyManagement": PropertyManagement,
+    "PropertyManagementAssociation": PropertyManagementAssociation,
+    "PropertyManagementUnit": PropertyManagementUnit,
 }
 
 export const pagesConfig = {
