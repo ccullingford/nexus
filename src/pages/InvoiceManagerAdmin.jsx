@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ArrowLeft, Send, ShieldCheck, Mail } from 'lucide-react';
+import { ArrowLeft, Send, ShieldCheck, Mail, TestTube, CheckCircle, XCircle } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -7,7 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { base44 } from '@/api/base44Client';
-import { sendEmailViaGraph } from '@/components/api/functions';
+import { sendEmailViaGraph, generateInvoicePdf } from '@/components/api/functions';
 
 export default function InvoiceManagerAdmin() {
   const [testEmail, setTestEmail] = useState({
@@ -17,6 +17,13 @@ export default function InvoiceManagerAdmin() {
     message: 'This is a test email from the Invoice Manager admin panel.'
   });
   const [sending, setSending] = useState(false);
+  
+  // Contract test state
+  const [testResults, setTestResults] = useState({
+    emailTest: null,
+    pdfTest: null
+  });
+  const [runningTests, setRunningTests] = useState(false);
 
   // Mock user data (in real app, this would come from useAuth())
   const user = {
@@ -29,6 +36,102 @@ export default function InvoiceManagerAdmin() {
 
   const hasPermission = (permission) => {
     return user.permissions.includes(permission);
+  };
+
+  const runContractTests = async () => {
+    setRunningTests(true);
+    const results = { emailTest: null, pdfTest: null };
+
+    // Test 1: sendEmailViaGraph
+    try {
+      console.log('=== Testing sendEmailViaGraph contract ===');
+      const emailPayload = {
+        to: ['test@example.com'],
+        cc: ['cc@example.com'],
+        subject: 'Contract Test Email',
+        htmlBody: '<p>This is a contract test</p>',
+        attachments: [
+          {
+            fileName: 'test.txt',
+            contentType: 'text/plain',
+            contentBytes: btoa('test content')
+          }
+        ]
+      };
+
+      const emailResult = await sendEmailViaGraph(emailPayload);
+      
+      // Verify response shape
+      const hasSuccess = typeof emailResult.data?.success === 'boolean';
+      const hasErrorOnFailure = !emailResult.data?.success ? typeof emailResult.data?.error === 'string' : true;
+      
+      results.emailTest = {
+        passed: hasSuccess && hasErrorOnFailure,
+        response: emailResult.data,
+        checks: {
+          hasSuccessField: hasSuccess,
+          hasErrorOnFailure: hasErrorOnFailure
+        }
+      };
+    } catch (error) {
+      results.emailTest = {
+        passed: false,
+        error: error.message,
+        response: null
+      };
+    }
+
+    // Test 2: generateInvoicePdf
+    try {
+      console.log('=== Testing generateInvoicePdf contract ===');
+      const mockInvoice = {
+        invoice_number: 'TEST-001',
+        customer_name: 'Test Customer',
+        customer_email: 'test@example.com',
+        issue_date: '2025-01-01',
+        due_date: '2025-01-31',
+        line_items: [
+          {
+            description: 'Test Item',
+            quantity: 1,
+            price: 100,
+            amount: 100
+          }
+        ],
+        subtotal: 100,
+        tax: 10,
+        total: 110
+      };
+
+      const pdfResult = await generateInvoicePdf({ invoice: mockInvoice });
+      
+      // Verify response shape
+      const hasSuccess = typeof pdfResult.data?.success === 'boolean';
+      const hasPdfBase64 = pdfResult.data?.success ? typeof pdfResult.data?.pdfBase64 === 'string' : true;
+      const hasFileName = pdfResult.data?.success ? typeof pdfResult.data?.fileName === 'string' : true;
+      const hasErrorOnFailure = !pdfResult.data?.success ? typeof pdfResult.data?.error === 'string' : true;
+      
+      results.pdfTest = {
+        passed: hasSuccess && hasPdfBase64 && hasFileName && hasErrorOnFailure,
+        response: pdfResult.data,
+        checks: {
+          hasSuccessField: hasSuccess,
+          hasPdfBase64OnSuccess: hasPdfBase64,
+          hasFileNameOnSuccess: hasFileName,
+          hasErrorOnFailure: hasErrorOnFailure
+        }
+      };
+    } catch (error) {
+      results.pdfTest = {
+        passed: false,
+        error: error.message,
+        response: null
+      };
+    }
+
+    setTestResults(results);
+    setRunningTests(false);
+    console.log('=== Contract tests completed ===', results);
   };
 
   const handleSendTestEmail = async (e) => {
@@ -186,6 +289,145 @@ export default function InvoiceManagerAdmin() {
               {sending ? 'Sending...' : 'Send Test Email'}
             </Button>
           </form>
+        </CardContent>
+      </Card>
+
+      {/* Function Contract Tests */}
+      <Card className="border-0 shadow-sm">
+        <CardHeader>
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-lg bg-purple-50 flex items-center justify-center">
+              <TestTube className="w-5 h-5 text-purple-600" />
+            </div>
+            <div>
+              <CardTitle className="text-[#414257]">Function Contract Tests</CardTitle>
+              <CardDescription>Verify backend function payload and response formats</CardDescription>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
+            <p className="text-sm text-blue-800">
+              These tests verify that backend functions <code className="bg-blue-100 px-1 rounded">sendEmailViaGraph</code> and <code className="bg-blue-100 px-1 rounded">generateInvoicePdf</code> return the expected response format.
+            </p>
+          </div>
+
+          <Button
+            onClick={runContractTests}
+            disabled={runningTests}
+            className="bg-purple-600 hover:bg-purple-700"
+          >
+            <TestTube className="w-4 h-4 mr-2" />
+            {runningTests ? 'Running Tests...' : 'Run Contract Tests'}
+          </Button>
+
+          {/* Test Results */}
+          {(testResults.emailTest || testResults.pdfTest) && (
+            <div className="space-y-4 mt-6">
+              {/* Email Test Result */}
+              {testResults.emailTest && (
+                <div className={`p-4 rounded-lg border ${
+                  testResults.emailTest.passed 
+                    ? 'bg-green-50 border-green-200' 
+                    : 'bg-red-50 border-red-200'
+                }`}>
+                  <div className="flex items-center gap-2 mb-2">
+                    {testResults.emailTest.passed ? (
+                      <CheckCircle className="w-5 h-5 text-green-600" />
+                    ) : (
+                      <XCircle className="w-5 h-5 text-red-600" />
+                    )}
+                    <h4 className="font-semibold text-[#414257]">sendEmailViaGraph</h4>
+                  </div>
+                  {testResults.emailTest.error ? (
+                    <p className="text-sm text-red-800">Error: {testResults.emailTest.error}</p>
+                  ) : (
+                    <div className="space-y-2">
+                      <div className="text-sm space-y-1">
+                        <div className="flex items-center gap-2">
+                          <span className="text-[#5c5f7a]">✓ Has success field:</span>
+                          <Badge className={testResults.emailTest.checks.hasSuccessField ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}>
+                            {testResults.emailTest.checks.hasSuccessField ? 'PASS' : 'FAIL'}
+                          </Badge>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span className="text-[#5c5f7a]">✓ Has error on failure:</span>
+                          <Badge className={testResults.emailTest.checks.hasErrorOnFailure ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}>
+                            {testResults.emailTest.checks.hasErrorOnFailure ? 'PASS' : 'FAIL'}
+                          </Badge>
+                        </div>
+                      </div>
+                      <details className="mt-2">
+                        <summary className="text-sm text-[#5c5f7a] cursor-pointer">View Response</summary>
+                        <pre className="mt-2 p-2 bg-white rounded text-xs overflow-auto">
+                          {JSON.stringify(testResults.emailTest.response, null, 2)}
+                        </pre>
+                      </details>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* PDF Test Result */}
+              {testResults.pdfTest && (
+                <div className={`p-4 rounded-lg border ${
+                  testResults.pdfTest.passed 
+                    ? 'bg-green-50 border-green-200' 
+                    : 'bg-red-50 border-red-200'
+                }`}>
+                  <div className="flex items-center gap-2 mb-2">
+                    {testResults.pdfTest.passed ? (
+                      <CheckCircle className="w-5 h-5 text-green-600" />
+                    ) : (
+                      <XCircle className="w-5 h-5 text-red-600" />
+                    )}
+                    <h4 className="font-semibold text-[#414257]">generateInvoicePdf</h4>
+                  </div>
+                  {testResults.pdfTest.error ? (
+                    <p className="text-sm text-red-800">Error: {testResults.pdfTest.error}</p>
+                  ) : (
+                    <div className="space-y-2">
+                      <div className="text-sm space-y-1">
+                        <div className="flex items-center gap-2">
+                          <span className="text-[#5c5f7a]">✓ Has success field:</span>
+                          <Badge className={testResults.pdfTest.checks.hasSuccessField ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}>
+                            {testResults.pdfTest.checks.hasSuccessField ? 'PASS' : 'FAIL'}
+                          </Badge>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span className="text-[#5c5f7a]">✓ Has pdfBase64 on success:</span>
+                          <Badge className={testResults.pdfTest.checks.hasPdfBase64OnSuccess ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}>
+                            {testResults.pdfTest.checks.hasPdfBase64OnSuccess ? 'PASS' : 'FAIL'}
+                          </Badge>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span className="text-[#5c5f7a]">✓ Has fileName on success:</span>
+                          <Badge className={testResults.pdfTest.checks.hasFileNameOnSuccess ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}>
+                            {testResults.pdfTest.checks.hasFileNameOnSuccess ? 'PASS' : 'FAIL'}
+                          </Badge>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span className="text-[#5c5f7a]">✓ Has error on failure:</span>
+                          <Badge className={testResults.pdfTest.checks.hasErrorOnFailure ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}>
+                            {testResults.pdfTest.checks.hasErrorOnFailure ? 'PASS' : 'FAIL'}
+                          </Badge>
+                        </div>
+                      </div>
+                      <details className="mt-2">
+                        <summary className="text-sm text-[#5c5f7a] cursor-pointer">View Response</summary>
+                        <pre className="mt-2 p-2 bg-white rounded text-xs overflow-auto max-h-40">
+                          {JSON.stringify({
+                            ...testResults.pdfTest.response,
+                            pdfBase64: testResults.pdfTest.response?.pdfBase64 ? '(base64 string truncated)' : undefined
+                          }, null, 2)}
+                        </pre>
+                      </details>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
         </CardContent>
       </Card>
 
