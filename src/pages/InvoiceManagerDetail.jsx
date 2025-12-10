@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
+import { sendEmailViaGraph, generateInvoicePdf } from '@/api/functions';
 import { createPageUrl } from '@/utils';
 import { ArrowLeft, Edit, Trash2, Mail, CheckCircle, Clock, FileText, ExternalLink, Download, Eye } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -84,7 +85,7 @@ export default function InvoiceManagerDetail() {
   const handleDownloadPdf = async () => {
     setGeneratingPdf(true);
     try {
-      const pdfResult = await base44.functions.invoke('generateInvoicePdf', { invoice });
+      const pdfResult = await generateInvoicePdf({ invoice });
       
       if (!pdfResult.data.success) {
         throw new Error(pdfResult.data.error || 'Failed to generate PDF');
@@ -121,7 +122,7 @@ export default function InvoiceManagerDetail() {
   const handlePreviewPdf = async () => {
     setGeneratingPdf(true);
     try {
-      const pdfResult = await base44.functions.invoke('generateInvoicePdf', { invoice });
+      const pdfResult = await generateInvoicePdf({ invoice });
       
       if (!pdfResult.data.success) {
         throw new Error(pdfResult.data.error || 'Failed to generate PDF');
@@ -168,7 +169,7 @@ export default function InvoiceManagerDetail() {
 
       // Generate PDF
       console.log('Generating PDF for invoice...');
-      const pdfResult = await base44.functions.invoke('generateInvoicePdf', { invoice });
+      const pdfResult = await generateInvoicePdf({ invoice });
 
       if (!pdfResult.data.success) {
         throw new Error(pdfResult.data.error || 'Failed to generate PDF');
@@ -208,7 +209,7 @@ export default function InvoiceManagerDetail() {
       `;
 
       // Send via Microsoft Graph with PDF attachment
-      const result = await base44.functions.invoke('sendEmailViaGraph', {
+      const result = await sendEmailViaGraph({
         to: recipients,
         cc: !invoice.customer_send_only_to_secondary_email && invoice.customer_secondary_email 
           ? [invoice.customer_secondary_email] 
