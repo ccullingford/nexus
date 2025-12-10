@@ -432,48 +432,37 @@ export default function InvoiceManagerUpload() {
               <div className="border-2 border-dashed border-[#e3e4ed] rounded-lg p-8 text-center">
                 <FileText className="w-12 h-12 text-[#5c5f7a] mx-auto mb-4" />
                 <p className="text-[#414257] font-medium mb-2">
-                  {file ? file.name : 'Choose a file to upload'}
+                  Choose file(s) to upload
                 </p>
                 <p className="text-sm text-[#5c5f7a] mb-4">
-                  Supports PDF, PNG, JPG, JPEG
+                  Supports PDF, PNG, JPG, JPEG • Select multiple files at once
                 </p>
                 <Input
                   type="file"
                   accept=".pdf,.png,.jpg,.jpeg"
+                  multiple
                   onChange={handleFileSelect}
                   className="max-w-xs mx-auto"
                 />
               </div>
 
-              <div className="flex justify-end gap-3">
-                {receipts.length > 0 && (
+              {uploading && (
+                <div className="flex items-center justify-center gap-2 text-[#414257]">
+                  <Loader className="w-5 h-5 animate-spin" />
+                  <p>Processing files...</p>
+                </div>
+              )}
+              
+              {receipts.length > 0 && !uploading && (
+                <div className="flex justify-center">
                   <Button
-                    variant="outline"
-                    onClick={() => {
-                      setFile(null);
-                    }}
+                    onClick={() => setStep('review')}
+                    className="bg-[#414257] hover:bg-[#5c5f7a]"
                   >
                     Continue to Invoice
                   </Button>
-                )}
-                <Button
-                  onClick={handleUploadAndExtract}
-                  disabled={!file || uploading}
-                  className="bg-[#414257] hover:bg-[#5c5f7a]"
-                >
-                  {uploading ? (
-                    <>
-                      <Loader className="w-4 h-4 mr-2 animate-spin" />
-                      Processing...
-                    </>
-                  ) : (
-                    <>
-                      <Upload className="w-4 h-4 mr-2" />
-                      {receipts.length > 0 ? 'Add Receipt' : 'Upload & Extract'}
-                    </>
-                  )}
-                </Button>
-              </div>
+                </div>
+              )}
             </CardContent>
           </Card>
         </>
