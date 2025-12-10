@@ -21,21 +21,14 @@ Deno.serve(async (req) => {
     const doc = new jsPDF();
 
     // Fetch and add logo
-    try {
-      const logoUrl = 'https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/69399eba1974c30a72b7b5de/06e4cf148_NewLogo.png';
-      const logoResponse = await fetch(logoUrl);
-      const logoBlob = await logoResponse.blob();
-      const logoBase64 = await new Promise((resolve) => {
-        const reader = new FileReader();
-        reader.onloadend = () => resolve(reader.result);
-        reader.readAsDataURL(logoBlob);
-      });
-      
-      // Add logo (small size, top left)
-      doc.addImage(logoBase64, 'PNG', 15, 15, 25, 10);
-    } catch (error) {
-      console.warn('Failed to load logo:', error);
-    }
+    const logoUrl = 'https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/69399eba1974c30a72b7b5de/06e4cf148_NewLogo.png';
+    const logoResponse = await fetch(logoUrl);
+    const logoArrayBuffer = await logoResponse.arrayBuffer();
+    const logoBase64 = btoa(String.fromCharCode(...new Uint8Array(logoArrayBuffer)));
+    const logoDataUrl = `data:image/png;base64,${logoBase64}`;
+    
+    // Add logo (small size, top left)
+    doc.addImage(logoDataUrl, 'PNG', 15, 15, 25, 10);
 
     // Company Header (top left, next to logo) and Invoice Info (top right)
     doc.setFontSize(11);
