@@ -2,12 +2,14 @@ import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import { createPageUrl } from '@/utils';
-import { ArrowLeft, Edit, Trash2, Mail, CheckCircle, Clock, FileText } from 'lucide-react';
+import { ArrowLeft, Edit, Trash2, Mail, CheckCircle, Clock, FileText, ExternalLink } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import InvoicePreview from '@/components/invoice/InvoicePreview';
 import { format } from 'date-fns';
 
 const statusColors = {
@@ -23,6 +25,7 @@ export default function InvoiceManagerDetail() {
   const invoiceId = params.get('id');
   
   const [sendingEmail, setSendingEmail] = useState(false);
+  const [previewModalOpen, setPreviewModalOpen] = useState(false);
 
   const { data: invoice, isLoading } = useQuery({
     queryKey: ['invoice', invoiceId],
@@ -67,12 +70,15 @@ export default function InvoiceManagerDetail() {
     }
   };
 
-  const handleSendEmail = async () => {
+  const handleOpenPreview = () => {
     if (!invoice.customer_email && !invoice.customer_secondary_email) {
-      alert('No email address for this customer');
+      alert('This invoice does not have a valid email address. Please update the Customer\'s email before sending.');
       return;
     }
+    setPreviewModalOpen(true);
+  };
 
+  const handleConfirmSend = async () => {
     setSendingEmail(true);
     
     try {
@@ -158,12 +164,13 @@ export default function InvoiceManagerDetail() {
 
       await base44.integrations.Core.SendEmail(emailParams);
 
-      alert('Invoice sent successfully!');
-      
-      // Update status to sent if it's not already paid
+      // Update status to sent if not already paid
       if (invoice.status !== 'paid') {
-        await handleStatusChange('sent');
+        await updateInvoiceMutation.mutateAsync({ id: invoiceId, data: { status: 'sent' } });
       }
+
+      setPreviewModalOpen(false);
+      alert('Invoice sent successfully!');
     } catch (error) {
       console.error('Error sending email:', error);
       alert('Failed to send invoice email: ' + error.message);
@@ -233,12 +240,12 @@ export default function InvoiceManagerDetail() {
 
             <Button
               variant="outline"
-              onClick={handleSendEmail}
-              disabled={(!invoice.customer_email && !invoice.customer_secondary_email) || sendingEmail}
+              onClick={handleOpenPreview}
+              disabled={!invoice.customer_email && !invoice.customer_secondary_email}
               className="bg-white"
             >
               <Mail className="w-4 h-4 mr-2" />
-              {sendingEmail ? 'Sending...' : 'Send via Email'}
+              Send via Email
             </Button>
           </div>
         </CardContent>
@@ -356,8 +363,57 @@ export default function InvoiceManagerDetail() {
               </div>
             </div>
           )}
+
+          {/* Source Document */}
+          {invoice.receipt_url && (
+            <div>
+              <p className="text-sm text-[#5c5f7a] mb-2">Source Document</p>
+              <div className="p-4 bg-[#e3e4ed] rounded-lg">
+                <a
+                  href={invoice.receipt_url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-2 text-[#414257] hover:text-[#5c5f7a] font-medium"
+                >
+                  <FileText className="w-4 h-4" />
+                  View Uploaded Receipt
+                  <ExternalLink className="w-3 h-3" />
+                </a>
+              </div>
+            </div>
+          )}
         </CardContent>
       </Card>
+
+      {/* Preview Modal */}
+      <Dialog open={previewModalOpen} onOpenChange={setPreviewModalOpen}>
+        <DialogContent className="max-w-4xl">
+          <DialogHeader>
+            <DialogTitle className="text-[#414257]">Preview Invoice Before Sending</DialogTitle>
+            <p className="text-sm text-[#5c5f7a]">Review the invoice below before sending it by email.</p>
+          </DialogHeader>
+          
+          <InvoicePreview invoice={invoice} />
+
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setPreviewModalOpen(false)}
+              disabled={sendingEmail}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleConfirmSend}
+              disabled={sendingEmail}
+              className="bg-[#414257] hover:bg-[#5c5f7a]"
+            >
+              <Mail className="w-4 h-4 mr-2" />
+              {sendingEmail ? 'Sending...' : 'Send Invoice'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
