@@ -14,10 +14,10 @@ import { format, addDays } from 'date-fns';
 
 export default function InvoiceManagerUpload() {
   const queryClient = useQueryClient();
-  const [step, setStep] = useState('upload'); // upload, extracted, preview
+  const [step, setStep] = useState('upload'); // upload, review
   const [file, setFile] = useState(null);
   const [uploading, setUploading] = useState(false);
-  const [extractedData, setExtractedData] = useState(null);
+  const [receipts, setReceipts] = useState([]);
   const [selectedCustomerId, setSelectedCustomerId] = useState('');
 
   const { data: customers = [] } = useQuery({
@@ -80,21 +80,29 @@ export default function InvoiceManagerUpload() {
       });
 
       if (result.status === 'success' && result.output) {
-        setExtractedData({
-          ...result.output,
-          receipt_url: file_url
-        });
+        const newReceipt = {
+          id: Date.now().toString(),
+          fileName: file.name,
+          receiptUrl: file_url,
+          vendorName: result.output.vendor_name,
+          invoiceDate: result.output.issue_date,
+          lineItems: result.output.line_items || [],
+          subtotal: result.output.subtotal,
+          tax: result.output.tax,
+          total: result.output.total_amount
+        };
         
-        setFormData({
-          title: result.output.vendor_name || '',
-          issue_date: result.output.issue_date || format(new Date(), 'yyyy-MM-dd'),
-          due_date: format(addDays(new Date(result.output.issue_date || new Date()), 30), 'yyyy-MM-dd'),
-          notes: '',
-          line_items: result.output.line_items || [],
-          tax: result.output.tax || 0
-        });
+        setReceipts([...receipts, newReceipt]);
         
-        setStep('extracted');
+        // Auto-set form title from first receipt
+        if (receipts.length === 0 && result.output.vendor_name) {
+          setFormData(prev => ({ ...prev, title: result.output.vendor_name }));
+        }
+        
+        setFile(null);
+        if (receipts.length === 0) {
+          setStep('review');
+        }
       } else {
         alert('Failed to extract data from receipt: ' + (result.details || 'Unknown error'));
       }
@@ -104,6 +112,35 @@ export default function InvoiceManagerUpload() {
     } finally {
       setUploading(false);
     }
+  };
+
+  const removeReceipt = (receiptId) => {
+    setReceipts(receipts.filter(r => r.id !== receiptId));
+    if (receipts.length === 1) {
+      setStep('upload');
+    }
+  };
+
+  const deduplicateLineItems = (allLineItems) => {
+    const dedupMap = {};
+    
+    allLineItems.forEach(item => {
+      const key = `${item.description.toLowerCase().trim()}_${item.price}`;
+      
+      if (dedupMap[key]) {
+        dedupMap[key].quantity += item.quantity;
+        dedupMap[key].amount = dedupMap[key].quantity * dedupMap[key].price;
+      } else {
+        dedupMap[key] = { ...item };
+      }
+    });
+    
+    return Object.values(dedupMap);
+  };
+
+  const getCombinedLineItems = () => {
+    const allLineItems = receipts.flatMap(r => r.lineItems);
+    return deduplicateLineItems(allLineItems);
   };
 
   const handleLineItemChange = (index, field, value) => {
@@ -134,8 +171,9 @@ export default function InvoiceManagerUpload() {
     });
   };
 
-  const subtotal = formData.line_items.reduce((sum, item) => sum + item.amount, 0);
-  const total = subtotal + formData.tax;
+  const combinedLineItems = step === 'review' ? getCombinedLineItems() : formData.line_items;
+  const subtotal = combinedLineItems.reduce((sum, item) => sum + (item.amount || 0), 0);
+  const total = subtotal + (formData.tax || 0);
 
   const createInvoiceMutation = useMutation({
     mutationFn: async (invoiceData) => {
@@ -155,6 +193,11 @@ export default function InvoiceManagerUpload() {
       return;
     }
 
+    if (receipts.length === 0) {
+      alert('Please upload at least one receipt');
+      return;
+    }
+
     const invoiceNumber = `INV-${Date.now()}`;
     
     const addressParts = [
@@ -164,6 +207,9 @@ export default function InvoiceManagerUpload() {
       selectedCustomer.zip
     ].filter(Boolean);
     const customerAddress = addressParts.join(', ');
+
+    const vendorNames = [...new Set(receipts.map(r => r.vendorName).filter(Boolean))].join(', ');
+    const receiptUrls = receipts.map(r => r.receiptUrl).join('\n');
 
     const invoiceData = {
       invoice_number: invoiceNumber,
@@ -176,14 +222,14 @@ export default function InvoiceManagerUpload() {
       title: formData.title,
       issue_date: formData.issue_date,
       due_date: formData.due_date,
-      notes: formData.notes,
-      line_items: formData.line_items.filter(item => item.description),
+      notes: formData.notes + (receipts.length > 1 ? `\n\nCombined from ${receipts.length} receipts` : ''),
+      line_items: combinedLineItems.filter(item => item.description),
       subtotal: subtotal,
       tax: formData.tax,
       total: total,
       status: 'draft',
-      vendor_name: extractedData?.vendor_name,
-      receipt_url: extractedData?.receipt_url
+      vendor_name: vendorNames,
+      receipt_url: receiptUrls
     };
 
     createInvoiceMutation.mutate(invoiceData);
@@ -206,8 +252,8 @@ export default function InvoiceManagerUpload() {
         </div>
       </div>
 
-      {/* Step 1: Upload */}
-      {step === 'upload' && (
+      {/* Upload Step */}
+      {(step === 'upload' || step === 'review') && (
         <Card className="border-0 shadow-sm">
           <CardHeader>
             <CardTitle className="text-[#414257]">Upload Receipt File</CardTitle>
@@ -252,14 +298,14 @@ export default function InvoiceManagerUpload() {
         </Card>
       )}
 
-      {/* Step 2: Edit Extracted Data */}
-      {step === 'extracted' && (
+      {/* Review Step */}
+      {step === 'review' && receipts.length > 0 && (
         <div className="space-y-6">
           <Card className="border-0 shadow-sm bg-green-50">
             <CardContent className="p-4 flex items-center gap-3">
               <Check className="w-5 h-5 text-green-600" />
               <p className="text-green-800">
-                Data extracted successfully! Review and edit below, then select a customer.
+                {receipts.length} receipt{receipts.length > 1 ? 's' : ''} processed! Line items have been combined and duplicates merged.
               </p>
             </CardContent>
           </Card>
@@ -334,13 +380,12 @@ export default function InvoiceManagerUpload() {
           {/* Line Items */}
           <Card className="border-0 shadow-sm">
             <CardHeader>
-              <div className="flex items-center justify-between">
-                <CardTitle className="text-[#414257]">Line Items</CardTitle>
-                <Button type="button" variant="outline" size="sm" onClick={addLineItem}>
-                  <Plus className="w-4 h-4 mr-2" />
-                  Add Item
-                </Button>
-              </div>
+              <CardTitle className="text-[#414257]">Combined Line Items</CardTitle>
+              {receipts.length > 1 && (
+                <p className="text-sm text-[#5c5f7a] mt-1">
+                  Duplicate items with matching description and price have been combined
+                </p>
+              )}
             </CardHeader>
             <CardContent>
               <div className="overflow-x-auto">
@@ -355,48 +400,13 @@ export default function InvoiceManagerUpload() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {formData.line_items.map((item, index) => (
+                    {combinedLineItems.map((item, index) => (
                       <TableRow key={index}>
-                        <TableCell>
-                          <Input
-                            value={item.description}
-                            onChange={(e) => handleLineItemChange(index, 'description', e.target.value)}
-                            placeholder="Item description"
-                          />
-                        </TableCell>
-                        <TableCell>
-                          <Input
-                            type="number"
-                            min="0"
-                            step="1"
-                            value={item.quantity}
-                            onChange={(e) => handleLineItemChange(index, 'quantity', e.target.value)}
-                          />
-                        </TableCell>
-                        <TableCell>
-                          <Input
-                            type="number"
-                            min="0"
-                            step="0.01"
-                            value={item.price}
-                            onChange={(e) => handleLineItemChange(index, 'price', e.target.value)}
-                          />
-                        </TableCell>
-                        <TableCell className="font-semibold">
-                          ${item.amount.toFixed(2)}
-                        </TableCell>
-                        <TableCell>
-                          {formData.line_items.length > 1 && (
-                            <Button
-                              type="button"
-                              variant="ghost"
-                              size="icon"
-                              onClick={() => removeLineItem(index)}
-                            >
-                              <Trash2 className="w-4 h-4 text-red-500" />
-                            </Button>
-                          )}
-                        </TableCell>
+                        <TableCell className="font-medium">{item.description}</TableCell>
+                        <TableCell className="text-center">{item.quantity}</TableCell>
+                        <TableCell className="text-right">${item.price?.toFixed(2)}</TableCell>
+                        <TableCell className="text-right font-semibold">${item.amount?.toFixed(2)}</TableCell>
+                        <TableCell></TableCell>
                       </TableRow>
                     ))}
                   </TableBody>
@@ -435,10 +445,10 @@ export default function InvoiceManagerUpload() {
               onClick={() => {
                 setStep('upload');
                 setFile(null);
-                setExtractedData(null);
+                setReceipts([]);
               }}
             >
-              Start Over
+              Add More Receipts
             </Button>
             <Button
               onClick={handleSaveInvoice}
