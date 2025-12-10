@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import { createPageUrl } from '@/utils';
-import { ArrowLeft, Upload, FileText, Loader, Check, Plus, Trash2, Save } from 'lucide-react';
+import { ArrowLeft, Upload, FileText, Loader, Check, Plus, Trash2, Save, Split } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -19,6 +19,7 @@ export default function InvoiceManagerUpload() {
   const [uploading, setUploading] = useState(false);
   const [receipts, setReceipts] = useState([]);
   const [selectedCustomerId, setSelectedCustomerId] = useState('');
+  const [createSeparateInvoices, setCreateSeparateInvoices] = useState(false);
 
   const { data: customers = [] } = useQuery({
     queryKey: ['customers'],
@@ -198,8 +199,6 @@ export default function InvoiceManagerUpload() {
       return;
     }
 
-    const invoiceNumber = `INV-${Date.now()}`;
-    
     const addressParts = [
       selectedCustomer.address,
       selectedCustomer.city,
@@ -208,31 +207,69 @@ export default function InvoiceManagerUpload() {
     ].filter(Boolean);
     const customerAddress = addressParts.join(', ');
 
-    const vendorNames = [...new Set(receipts.map(r => r.vendorName).filter(Boolean))].join(', ');
-    const receiptUrls = receipts.map(r => r.receiptUrl).join('\n');
+    if (createSeparateInvoices) {
+      // Create separate invoice for each receipt
+      for (let i = 0; i < receipts.length; i++) {
+        const receipt = receipts[i];
+        const invoiceNumber = `INV-${Date.now()}-${i + 1}`;
+        const receiptSubtotal = receipt.lineItems.reduce((sum, item) => sum + (item.amount || 0), 0);
+        const receiptTotal = receiptSubtotal + (receipt.tax || 0);
 
-    const invoiceData = {
-      invoice_number: invoiceNumber,
-      customer_id: selectedCustomer.id,
-      customer_name: selectedCustomer.name,
-      customer_email: selectedCustomer.email || '',
-      customer_secondary_email: selectedCustomer.secondary_email || '',
-      customer_send_only_to_secondary_email: selectedCustomer.send_only_to_secondary_email || false,
-      customer_address: customerAddress,
-      title: formData.title,
-      issue_date: formData.issue_date,
-      due_date: formData.due_date,
-      notes: formData.notes + (receipts.length > 1 ? `\n\nCombined from ${receipts.length} receipts` : ''),
-      line_items: combinedLineItems.filter(item => item.description),
-      subtotal: subtotal,
-      tax: formData.tax,
-      total: total,
-      status: 'draft',
-      vendor_name: vendorNames,
-      receipt_url: receiptUrls
-    };
+        const invoiceData = {
+          invoice_number: invoiceNumber,
+          customer_id: selectedCustomer.id,
+          customer_name: selectedCustomer.name,
+          customer_email: selectedCustomer.email || '',
+          customer_secondary_email: selectedCustomer.secondary_email || '',
+          customer_send_only_to_secondary_email: selectedCustomer.send_only_to_secondary_email || false,
+          customer_address: customerAddress,
+          title: receipt.vendorName || formData.title,
+          issue_date: receipt.invoiceDate || formData.issue_date,
+          due_date: formData.due_date,
+          notes: formData.notes,
+          line_items: receipt.lineItems.filter(item => item.description),
+          subtotal: receiptSubtotal,
+          tax: receipt.tax || 0,
+          total: receiptTotal,
+          status: 'draft',
+          vendor_name: receipt.vendorName,
+          receipt_url: receipt.receiptUrl
+        };
 
-    createInvoiceMutation.mutate(invoiceData);
+        await base44.entities.Invoice.create(invoiceData);
+      }
+
+      queryClient.invalidateQueries({ queryKey: ['invoices'] });
+      window.location.href = createPageUrl('InvoiceManagerInvoices');
+    } else {
+      // Create single combined invoice
+      const invoiceNumber = `INV-${Date.now()}`;
+      const vendorNames = [...new Set(receipts.map(r => r.vendorName).filter(Boolean))].join(', ');
+      const receiptUrls = receipts.map(r => r.receiptUrl).join('\n');
+
+      const invoiceData = {
+        invoice_number: invoiceNumber,
+        customer_id: selectedCustomer.id,
+        customer_name: selectedCustomer.name,
+        customer_email: selectedCustomer.email || '',
+        customer_secondary_email: selectedCustomer.secondary_email || '',
+        customer_send_only_to_secondary_email: selectedCustomer.send_only_to_secondary_email || false,
+        customer_address: customerAddress,
+        title: formData.title,
+        issue_date: formData.issue_date,
+        due_date: formData.due_date,
+        notes: formData.notes + (receipts.length > 1 ? `\n\nCombined from ${receipts.length} receipts` : ''),
+        line_items: combinedLineItems.filter(item => item.description),
+        subtotal: subtotal,
+        tax: formData.tax,
+        total: total,
+        status: 'draft',
+        vendor_name: vendorNames,
+        receipt_url: receiptUrls
+      };
+
+      createInvoiceMutation.mutate(invoiceData);
+    }
   };
 
   return (
@@ -387,6 +424,37 @@ export default function InvoiceManagerUpload() {
             </CardContent>
           </Card>
 
+          {/* Invoice Options */}
+          {receipts.length > 1 && (
+            <Card className="border-0 shadow-sm bg-amber-50 border-amber-200">
+              <CardContent className="p-4">
+                <div className="flex items-start gap-3">
+                  <Split className="w-5 h-5 text-amber-600 mt-0.5" />
+                  <div className="flex-1">
+                    <div className="flex items-center gap-3">
+                      <label className="flex items-center gap-2 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={createSeparateInvoices}
+                          onChange={(e) => setCreateSeparateInvoices(e.target.checked)}
+                          className="w-4 h-4"
+                        />
+                        <span className="font-medium text-amber-900">
+                          Create separate invoice for each receipt
+                        </span>
+                      </label>
+                    </div>
+                    <p className="text-sm text-amber-800 mt-1">
+                      {createSeparateInvoices 
+                        ? `Will create ${receipts.length} individual invoices, one for each receipt` 
+                        : 'Will combine all receipts into one invoice with deduplicated line items'}
+                    </p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
           {/* Invoice Details */}
           <Card className="border-0 shadow-sm">
             <CardHeader>
@@ -434,15 +502,18 @@ export default function InvoiceManagerUpload() {
           </Card>
 
           {/* Line Items */}
-          <Card className="border-0 shadow-sm">
-            <CardHeader>
-              <CardTitle className="text-[#414257]">Combined Line Items</CardTitle>
-              {receipts.length > 1 && (
-                <p className="text-sm text-[#5c5f7a] mt-1">
-                  Duplicate items with matching description and price have been combined
-                </p>
-              )}
-            </CardHeader>
+          {!createSeparateInvoices && (
+            <Card className="border-0 shadow-sm">
+              <CardHeader>
+                <CardTitle className="text-[#414257]">
+                  {receipts.length > 1 ? 'Combined Line Items' : 'Line Items'}
+                </CardTitle>
+                {receipts.length > 1 && (
+                  <p className="text-sm text-[#5c5f7a] mt-1">
+                    Duplicate items with matching description and price have been combined
+                  </p>
+                )}
+              </CardHeader>
             <CardContent>
               <div className="overflow-x-auto">
                 <Table>
@@ -491,7 +562,43 @@ export default function InvoiceManagerUpload() {
                 </div>
               </div>
             </CardContent>
-          </Card>
+            </Card>
+          )}
+
+          {/* Summary for separate invoices */}
+          {createSeparateInvoices && (
+            <Card className="border-0 shadow-sm">
+              <CardHeader>
+                <CardTitle className="text-[#414257]">Invoices to Create</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  {receipts.map((receipt, index) => {
+                    const receiptSubtotal = receipt.lineItems.reduce((sum, item) => sum + (item.amount || 0), 0);
+                    const receiptTotal = receiptSubtotal + (receipt.tax || 0);
+                    return (
+                      <div key={receipt.id} className="p-3 bg-[#e3e4ed] rounded-lg">
+                        <div className="flex items-start justify-between">
+                          <div className="flex-1">
+                            <p className="font-medium text-[#414257]">Invoice #{index + 1}</p>
+                            <p className="text-sm text-[#5c5f7a] mt-1">
+                              {receipt.vendorName || 'No vendor'} • {receipt.lineItems.length} items
+                            </p>
+                          </div>
+                          <p className="font-semibold text-[#414257]">${receiptTotal.toFixed(2)}</p>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+                <div className="mt-4 p-3 bg-blue-50 rounded-lg border border-blue-200">
+                  <p className="text-sm text-blue-800">
+                    Total: {receipts.length} invoice{receipts.length > 1 ? 's' : ''} will be created for {selectedCustomerId ? customers.find(c => c.id === selectedCustomerId)?.name : 'the selected customer'}
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+          )}
 
           {/* Actions */}
           <div className="flex justify-end gap-3">
