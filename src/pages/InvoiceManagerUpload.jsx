@@ -93,12 +93,17 @@ export default function InvoiceManagerUpload() {
           total: result.output.total_amount
         };
         
-        setReceipts([...receipts, newReceipt]);
+        const updatedReceipts = [...receipts, newReceipt];
+        setReceipts(updatedReceipts);
         
-        // Auto-set form title from first receipt
+        // Auto-set form title and tax from first receipt
         if (receipts.length === 0 && result.output.vendor_name) {
           setFormData(prev => ({ ...prev, title: result.output.vendor_name }));
         }
+        
+        // Calculate combined tax from all receipts
+        const combinedTax = updatedReceipts.reduce((sum, r) => sum + (r.tax || 0), 0);
+        setFormData(prev => ({ ...prev, tax: combinedTax }));
         
         setFile(null);
         if (receipts.length === 0) {
@@ -116,7 +121,13 @@ export default function InvoiceManagerUpload() {
   };
 
   const removeReceipt = (receiptId) => {
-    setReceipts(receipts.filter(r => r.id !== receiptId));
+    const updatedReceipts = receipts.filter(r => r.id !== receiptId);
+    setReceipts(updatedReceipts);
+    
+    // Recalculate combined tax after removal
+    const combinedTax = updatedReceipts.reduce((sum, r) => sum + (r.tax || 0), 0);
+    setFormData(prev => ({ ...prev, tax: combinedTax }));
+    
     if (receipts.length === 1) {
       setStep('upload');
     }
@@ -546,7 +557,7 @@ export default function InvoiceManagerUpload() {
                   <span className="font-semibold text-[#414257]">${subtotal.toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between items-center">
-                  <Label>Tax:</Label>
+                  <Label>Tax: {receipts.length > 1 && <span className="text-xs text-[#5c5f7a] font-normal">(from receipts)</span>}</Label>
                   <Input
                     type="number"
                     min="0"
