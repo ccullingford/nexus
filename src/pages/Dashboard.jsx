@@ -16,6 +16,15 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 
 const tools = [
   {
+    name: 'Property Management',
+    description: 'Manage associations, units, owners, and tenants.',
+    icon: Building2,
+    path: 'PropertyManagement',
+    color: 'from-purple-500 to-purple-600',
+    bgColor: 'bg-purple-50',
+    status: 'active'
+  },
+  {
     name: 'Invoice Manager',
     description: 'Create invoices, manage customers, and track billing with AI-powered receipt extraction.',
     icon: FileText,
