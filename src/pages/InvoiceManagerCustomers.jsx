@@ -51,6 +51,7 @@ export default function InvoiceManagerCustomers() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingCustomer, setEditingCustomer] = useState(null);
   const [formData, setFormData] = useState(emptyCustomer);
+  const [hasAutoOpened, setHasAutoOpened] = useState(false);
 
   const { data: customers = [], isLoading } = useQuery({
     queryKey: ['customers'],
@@ -67,7 +68,7 @@ export default function InvoiceManagerCustomers() {
   });
 
   useEffect(() => {
-    if (createForAssociationId && associationForPreload && !dialogOpen) {
+    if (createForAssociationId && associationForPreload && !hasAutoOpened) {
       setFormData({
         ...emptyCustomer,
         type: 'association',
@@ -79,8 +80,9 @@ export default function InvoiceManagerCustomers() {
         zip: associationForPreload.zip || ''
       });
       setDialogOpen(true);
+      setHasAutoOpened(true);
     }
-  }, [createForAssociationId, associationForPreload, dialogOpen]);
+  }, [createForAssociationId, associationForPreload, hasAutoOpened]);
 
   const createCustomerMutation = useMutation({
     mutationFn: async (data) => {
