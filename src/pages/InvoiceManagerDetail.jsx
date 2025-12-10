@@ -172,8 +172,8 @@ export default function InvoiceManagerDetail() {
         htmlBody: emailParams.body
       });
 
-      if (!result.success) {
-        throw new Error(result.error || 'Failed to send email');
+      if (!result.data.success) {
+        throw new Error(result.data.error || 'Failed to send email');
       }
 
       // Update status to sent if not already paid
