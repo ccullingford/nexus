@@ -8,6 +8,7 @@ Deno.serve(async (req) => {
     const { to, cc, subject, htmlBody, textBody, attachments } = await req.json();
     
     console.log('=== sendEmailViaGraph function called ===');
+    console.log('Timestamp:', new Date().toISOString());
     console.log('Parameters received:', { 
       to, 
       cc, 
@@ -17,15 +18,49 @@ Deno.serve(async (req) => {
       attachmentCount: attachments?.length || 0 
     });
     
-    // Validate required parameters
+    // VALIDATION: to array
     if (!to || !Array.isArray(to) || to.length === 0) {
-      throw new Error('Missing or invalid "to" parameter. Must be a non-empty array of email addresses.');
+      const error = 'Missing or invalid "to" parameter. Must be a non-empty array of email addresses.';
+      console.error('[VALIDATION ERROR]', error);
+      return Response.json({
+        success: false,
+        error: error
+      }, { status: 400 });
     }
+    
+    // VALIDATION: subject
     if (!subject) {
-      throw new Error('Missing "subject" parameter.');
+      const error = 'Missing "subject" parameter.';
+      console.error('[VALIDATION ERROR]', error);
+      return Response.json({
+        success: false,
+        error: error
+      }, { status: 400 });
     }
+    
+    // VALIDATION: email body
     if (!htmlBody && !textBody) {
-      throw new Error('Either "htmlBody" or "textBody" must be provided.');
+      const error = 'Email body must contain htmlBody or textBody.';
+      console.error('[VALIDATION ERROR]', error);
+      return Response.json({
+        success: false,
+        error: error
+      }, { status: 400 });
+    }
+    
+    // VALIDATION: attachments format (if present)
+    if (attachments && Array.isArray(attachments)) {
+      for (let i = 0; i < attachments.length; i++) {
+        const att = attachments[i];
+        if (!att.fileName || !att.contentType || !att.contentBytes) {
+          const error = `Attachment at index ${i} is missing required fields (fileName, contentType, contentBytes).`;
+          console.error('[VALIDATION ERROR]', error);
+          return Response.json({
+            success: false,
+            error: error
+          }, { status: 400 });
+        }
+      }
     }
 
     // Get secrets from environment
@@ -42,7 +77,12 @@ Deno.serve(async (req) => {
     });
 
     if (!tenantId || !clientId || !clientSecret || !senderAddress) {
-      throw new Error('Missing required Graph API secrets. Please configure GRAPH_TENANT_ID, GRAPH_CLIENT_ID, GRAPH_CLIENT_SECRET, and GRAPH_SENDER_ADDRESS.');
+      const error = 'Missing required Graph API secrets. Please configure GRAPH_TENANT_ID, GRAPH_CLIENT_ID, GRAPH_CLIENT_SECRET, and GRAPH_SENDER_ADDRESS.';
+      console.error('[CONFIGURATION ERROR]', error);
+      return Response.json({
+        success: false,
+        error: error
+      }, { status: 500 });
     }
 
     // Get access token using client credentials flow
@@ -65,8 +105,12 @@ Deno.serve(async (req) => {
 
     if (!tokenResponse.ok) {
       const errorData = await tokenResponse.json().catch(() => ({}));
-      console.error('Token request failed:', errorData);
-      throw new Error(`Failed to get access token: ${tokenResponse.status} ${tokenResponse.statusText}. ${JSON.stringify(errorData)}`);
+      const error = `Failed to get access token: ${tokenResponse.status} ${tokenResponse.statusText}`;
+      console.error('[GRAPH AUTH ERROR]', new Date().toISOString(), error, errorData);
+      return Response.json({
+        success: false,
+        error: error
+      }, { status: 500 });
     }
 
     const { access_token } = await tokenResponse.json();
@@ -96,11 +140,16 @@ Deno.serve(async (req) => {
       message.attachments = attachments.map(attachment => ({
         '@odata.type': '#microsoft.graph.fileAttachment',
         name: attachment.fileName,
-        contentType: attachment.contentType || 'application/pdf',
+        contentType: attachment.contentType,
         contentBytes: attachment.contentBytes
       }));
       console.log(`Added ${attachments.length} attachment(s)`);
     }
+    
+    const payload = {
+      message,
+      saveToSentItems: true
+    };
 
     // Send email via Microsoft Graph API using the sender address
     console.log('Sending email via Microsoft Graph...');
@@ -116,27 +165,29 @@ Deno.serve(async (req) => {
           'Authorization': `Bearer ${access_token}`,
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify({ message })
+        body: JSON.stringify(payload)
       }
     );
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
-      console.error('Graph API error response:', errorData);
-      throw new Error(
-        `Microsoft Graph API error: ${response.status} ${response.statusText}. ${JSON.stringify(errorData)}`
-      );
+      const error = `Microsoft Graph API error: ${response.status} ${response.statusText}`;
+      console.error('[GRAPH API ERROR]', new Date().toISOString(), error, errorData);
+      return Response.json({
+        success: false,
+        error: error
+      }, { status: 500 });
     }
 
-    console.log('=== Email sent successfully ===');
+    console.log('=== Email sent successfully ===', new Date().toISOString());
     
     return Response.json({
-      success: true,
-      message: 'Email sent successfully via Microsoft Graph'
+      success: true
     });
 
   } catch (error) {
     console.error('=== Error in sendEmailViaGraph ===');
+    console.error('Timestamp:', new Date().toISOString());
     console.error('Error:', error.message);
     console.error('Stack:', error.stack);
     
