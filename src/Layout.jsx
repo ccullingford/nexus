@@ -13,13 +13,13 @@ import {
   Menu,
   X,
   ChevronRight,
-  LogOut
+  LogOut,
+  Settings
 } from 'lucide-react';
 
 const navItems = [
   { name: 'Dashboard', icon: LayoutDashboard, path: 'Dashboard' },
   { name: 'Property Management', icon: Building2, path: 'PropertyManagement' },
-  { name: 'Property Imports', icon: FileText, path: 'PropertyManagementImports' },
   { name: 'Invoice Manager', icon: FileText, path: 'InvoiceManager' },
   { name: 'HOA Manager', icon: Building2, path: 'HOAManager' },
   { name: 'Resident Forms', icon: ClipboardList, path: 'ResidentForms' },
@@ -173,12 +173,21 @@ export default function Layout({ children, currentPageName }) {
                   <p className="text-sm font-medium text-[#414257]">{user.name}</p>
                   <p className="text-xs text-[#5c5f7a]">{user.email}</p>
                 </div>
+                {(user.role === 'Super Admin' || user.role === 'Org Admin') && (
+                  <Link 
+                    to={createPageUrl('GeneralSettings')}
+                    className="w-full px-4 py-2 text-left text-sm text-[#414257] hover:bg-gray-50 flex items-center gap-2"
+                  >
+                    <Settings className="w-4 h-4" />
+                    General Settings
+                  </Link>
+                )}
                 <Link 
                   to={createPageUrl('InvoiceManagerAdmin')}
                   className="w-full px-4 py-2 text-left text-sm text-[#414257] hover:bg-gray-50 flex items-center gap-2"
                 >
                   <FileText className="w-4 h-4" />
-                  Admin
+                  Invoice Manager Admin
                 </Link>
                 <button className="w-full px-4 py-2 text-left text-sm text-[#414257] hover:bg-gray-50 flex items-center gap-2">
                   <LogOut className="w-4 h-4" />

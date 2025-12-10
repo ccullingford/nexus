@@ -18,6 +18,7 @@ import PropertyManagementAssociation from './pages/PropertyManagementAssociation
 import PropertyManagementUnit from './pages/PropertyManagementUnit';
 import PropertyManagementImports from './pages/PropertyManagementImports';
 import PropertyManagementImportsAppFolioHomeownerDirectory from './pages/PropertyManagementImportsAppFolioHomeownerDirectory';
+import GeneralSettings from './pages/GeneralSettings';
 import __Layout from './Layout.jsx';
 
 
@@ -42,6 +43,7 @@ export const PAGES = {
     "PropertyManagementUnit": PropertyManagementUnit,
     "PropertyManagementImports": PropertyManagementImports,
     "PropertyManagementImportsAppFolioHomeownerDirectory": PropertyManagementImportsAppFolioHomeownerDirectory,
+    "GeneralSettings": GeneralSettings,
 }
 
 export const pagesConfig = {
