@@ -20,15 +20,32 @@ Deno.serve(async (req) => {
 
     const doc = new jsPDF();
 
-    // Company Header (top left) and Invoice Info (top right)
+    // Fetch and add logo
+    try {
+      const logoUrl = 'https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/69399eba1974c30a72b7b5de/06e4cf148_NewLogo.png';
+      const logoResponse = await fetch(logoUrl);
+      const logoBlob = await logoResponse.blob();
+      const logoBase64 = await new Promise((resolve) => {
+        const reader = new FileReader();
+        reader.onloadend = () => resolve(reader.result);
+        reader.readAsDataURL(logoBlob);
+      });
+      
+      // Add logo (small size, top left)
+      doc.addImage(logoBase64, 'PNG', 15, 15, 25, 10);
+    } catch (error) {
+      console.warn('Failed to load logo:', error);
+    }
+
+    // Company Header (top left, next to logo) and Invoice Info (top right)
     doc.setFontSize(11);
     doc.setFont(undefined, 'bold');
-    doc.text('JCC Property Group', 15, 20);
+    doc.text('JCC Property Group', 42, 20);
     doc.setFont(undefined, 'normal');
     doc.setFontSize(9);
-    doc.text('PO Box 1799', 15, 26);
-    doc.text('Indian Trail, NC 28079 United States', 15, 31);
-    doc.text('INFO@JCCPG.COM | (704) 595-9282', 15, 36);
+    doc.text('PO Box 1799', 42, 26);
+    doc.text('Indian Trail, NC 28079 United States', 42, 31);
+    doc.text('INFO@JCCPG.COM | (704) 595-9282', 42, 36);
 
     // Invoice number and issue date (top right)
     doc.setFontSize(10);
