@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import { createPageUrl } from '@/utils';
-import { ArrowLeft, Edit, Trash2, Mail, CheckCircle, Clock, FileText, ExternalLink } from 'lucide-react';
+import { ArrowLeft, Edit, Trash2, Mail, CheckCircle, Clock, FileText, ExternalLink, Download, Eye } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -26,6 +26,9 @@ export default function InvoiceManagerDetail() {
   
   const [sendingEmail, setSendingEmail] = useState(false);
   const [previewModalOpen, setPreviewModalOpen] = useState(false);
+  const [pdfPreviewModalOpen, setPdfPreviewModalOpen] = useState(false);
+  const [pdfUrl, setPdfUrl] = useState(null);
+  const [generatingPdf, setGeneratingPdf] = useState(false);
 
   const { data: invoice, isLoading } = useQuery({
     queryKey: ['invoice', invoiceId],
@@ -76,6 +79,75 @@ export default function InvoiceManagerDetail() {
       return;
     }
     setPreviewModalOpen(true);
+  };
+
+  const handleDownloadPdf = async () => {
+    setGeneratingPdf(true);
+    try {
+      const pdfResult = await base44.functions.invoke('generateInvoicePdf', { invoice });
+      
+      if (!pdfResult.data.success) {
+        throw new Error(pdfResult.data.error || 'Failed to generate PDF');
+      }
+
+      const { pdfBase64, fileName } = pdfResult.data;
+      
+      // Convert base64 to blob
+      const byteCharacters = atob(pdfBase64);
+      const byteNumbers = new Array(byteCharacters.length);
+      for (let i = 0; i < byteCharacters.length; i++) {
+        byteNumbers[i] = byteCharacters.charCodeAt(i);
+      }
+      const byteArray = new Uint8Array(byteNumbers);
+      const blob = new Blob([byteArray], { type: 'application/pdf' });
+      
+      // Create download link
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = fileName;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      a.remove();
+    } catch (error) {
+      console.error('Error downloading PDF:', error);
+      alert('Failed to download PDF: ' + error.message);
+    } finally {
+      setGeneratingPdf(false);
+    }
+  };
+
+  const handlePreviewPdf = async () => {
+    setGeneratingPdf(true);
+    try {
+      const pdfResult = await base44.functions.invoke('generateInvoicePdf', { invoice });
+      
+      if (!pdfResult.data.success) {
+        throw new Error(pdfResult.data.error || 'Failed to generate PDF');
+      }
+
+      const { pdfBase64 } = pdfResult.data;
+      
+      // Convert base64 to blob
+      const byteCharacters = atob(pdfBase64);
+      const byteNumbers = new Array(byteCharacters.length);
+      for (let i = 0; i < byteCharacters.length; i++) {
+        byteNumbers[i] = byteCharacters.charCodeAt(i);
+      }
+      const byteArray = new Uint8Array(byteNumbers);
+      const blob = new Blob([byteArray], { type: 'application/pdf' });
+      
+      // Create object URL for preview
+      const url = window.URL.createObjectURL(blob);
+      setPdfUrl(url);
+      setPdfPreviewModalOpen(true);
+    } catch (error) {
+      console.error('Error previewing PDF:', error);
+      alert('Failed to preview PDF: ' + error.message);
+    } finally {
+      setGeneratingPdf(false);
+    }
   };
 
   const handleConfirmSend = async () => {
@@ -247,6 +319,26 @@ export default function InvoiceManagerDetail() {
               <Mail className="w-4 h-4 mr-2" />
               Send via Email
             </Button>
+
+            <Button
+              variant="outline"
+              onClick={handlePreviewPdf}
+              disabled={generatingPdf}
+              className="bg-white"
+            >
+              <Eye className="w-4 h-4 mr-2" />
+              {generatingPdf ? 'Generating...' : 'Preview PDF'}
+            </Button>
+
+            <Button
+              variant="outline"
+              onClick={handleDownloadPdf}
+              disabled={generatingPdf}
+              className="bg-white"
+            >
+              <Download className="w-4 h-4 mr-2" />
+              {generatingPdf ? 'Generating...' : 'Download PDF'}
+            </Button>
           </div>
         </CardContent>
       </Card>
@@ -385,7 +477,7 @@ export default function InvoiceManagerDetail() {
         </CardContent>
       </Card>
 
-      {/* Preview Modal */}
+      {/* Email Preview Modal */}
       <Dialog open={previewModalOpen} onOpenChange={setPreviewModalOpen}>
         <DialogContent className="max-w-4xl">
           <DialogHeader>
@@ -410,6 +502,52 @@ export default function InvoiceManagerDetail() {
             >
               <Mail className="w-4 h-4 mr-2" />
               {sendingEmail ? 'Sending...' : 'Send Invoice'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* PDF Preview Modal */}
+      <Dialog open={pdfPreviewModalOpen} onOpenChange={(open) => {
+        setPdfPreviewModalOpen(open);
+        if (!open && pdfUrl) {
+          window.URL.revokeObjectURL(pdfUrl);
+          setPdfUrl(null);
+        }
+      }}>
+        <DialogContent className="max-w-5xl h-[80vh]">
+          <DialogHeader>
+            <DialogTitle className="text-[#414257]">PDF Preview</DialogTitle>
+            <p className="text-sm text-[#5c5f7a]">Preview of the generated invoice PDF</p>
+          </DialogHeader>
+          
+          {pdfUrl && (
+            <iframe
+              src={pdfUrl}
+              className="w-full h-full border-0 rounded-lg"
+              title="Invoice PDF Preview"
+            />
+          )}
+
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setPdfPreviewModalOpen(false);
+                if (pdfUrl) {
+                  window.URL.revokeObjectURL(pdfUrl);
+                  setPdfUrl(null);
+                }
+              }}
+            >
+              Close
+            </Button>
+            <Button
+              onClick={handleDownloadPdf}
+              className="bg-[#414257] hover:bg-[#5c5f7a]"
+            >
+              <Download className="w-4 h-4 mr-2" />
+              Download PDF
             </Button>
           </DialogFooter>
         </DialogContent>
