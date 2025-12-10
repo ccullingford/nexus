@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
-import { sendEmailViaGraph, generateInvoicePdf } from '@/api/functions';
+import { sendEmailViaGraph, generateInvoicePdf } from '@/components/api/functions';
 import { createPageUrl } from '@/utils';
 import { ArrowLeft, Edit, Trash2, Mail, CheckCircle, Clock, FileText, ExternalLink, Download, Eye } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';

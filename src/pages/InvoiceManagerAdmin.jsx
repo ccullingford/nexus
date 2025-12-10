@@ -7,7 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { base44 } from '@/api/base44Client';
-import { sendEmailViaGraph } from '@/api/functions';
+import { sendEmailViaGraph } from '@/components/api/functions';
 
 export default function InvoiceManagerAdmin() {
   const [testEmail, setTestEmail] = useState({
