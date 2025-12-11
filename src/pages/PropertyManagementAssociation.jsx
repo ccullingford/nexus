@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import { createPageUrl } from '@/utils';
-import { ArrowLeft, Plus, Edit, Users, Home, Building, FileText, DollarSign } from 'lucide-react';
+import { ArrowLeft, Plus, Edit, Users, Home, Building, FileText, DollarSign, Search } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -27,6 +27,8 @@ export default function PropertyManagementAssociation() {
   const [showUnitModal, setShowUnitModal] = useState(false);
   const [showOwnerModal, setShowOwnerModal] = useState(false);
   const [showTenantModal, setShowTenantModal] = useState(false);
+  const [ownerSearch, setOwnerSearch] = useState('');
+  const [tenantSearch, setTenantSearch] = useState('');
 
   const { data: association, isLoading } = useQuery({
     queryKey: ['association', associationId],
@@ -90,6 +92,32 @@ export default function PropertyManagementAssociation() {
     const unit = units.find(u => u.id === unitId);
     return unit?.unit_number || '—';
   };
+
+  const filteredOwners = owners.filter(o => {
+    const term = ownerSearch.trim().toLowerCase();
+    if (!term) return true;
+    
+    const name = o.is_company 
+      ? (o.company_name || '').toLowerCase()
+      : `${o.first_name || ''} ${o.last_name || ''}`.toLowerCase();
+    const email = (o.email || '').toLowerCase();
+    const phone = (o.phone || '').toLowerCase();
+    const unitNum = getUnitNumber(o.unit_id).toLowerCase();
+    
+    return name.includes(term) || email.includes(term) || phone.includes(term) || unitNum.includes(term);
+  });
+
+  const filteredTenants = tenants.filter(t => {
+    const term = tenantSearch.trim().toLowerCase();
+    if (!term) return true;
+    
+    const name = `${t.first_name || ''} ${t.last_name || ''}`.toLowerCase();
+    const email = (t.email || '').toLowerCase();
+    const phone = (t.phone || '').toLowerCase();
+    const unitNum = getUnitNumber(t.unit_id).toLowerCase();
+    
+    return name.includes(term) || email.includes(term) || phone.includes(term) || unitNum.includes(term);
+  });
 
   if (isLoading) {
     return <div className="text-center py-12 text-[#5c5f7a]">Loading association...</div>;
@@ -219,8 +247,28 @@ export default function PropertyManagementAssociation() {
               </div>
             </CardHeader>
             <CardContent>
-              {owners.length === 0 ? (
-                <div className="text-center py-8 text-[#5c5f7a]">No owners yet</div>
+              {owners.length > 0 && (
+                <div className="mb-4">
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-[#5c5f7a]" />
+                    <Input
+                      placeholder="Search owners by name, email, phone, or unit..."
+                      value={ownerSearch}
+                      onChange={(e) => setOwnerSearch(e.target.value)}
+                      className="pl-10"
+                    />
+                  </div>
+                  {ownerSearch && (
+                    <p className="text-sm text-[#5c5f7a] mt-2">
+                      Showing {filteredOwners.length} of {owners.length} owners
+                    </p>
+                  )}
+                </div>
+              )}
+              {filteredOwners.length === 0 ? (
+                <div className="text-center py-8 text-[#5c5f7a]">
+                  {owners.length === 0 ? 'No owners yet' : 'No owners match your search'}
+                </div>
               ) : (
                 <div className="overflow-x-auto">
                   <Table>
@@ -234,7 +282,7 @@ export default function PropertyManagementAssociation() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {owners.map((owner) => (
+                      {filteredOwners.map((owner) => (
                         <TableRow key={owner.id}>
                           <TableCell>
                             <div>
@@ -289,8 +337,28 @@ export default function PropertyManagementAssociation() {
               </div>
             </CardHeader>
             <CardContent>
-              {tenants.length === 0 ? (
-                <div className="text-center py-8 text-[#5c5f7a]">No tenants yet</div>
+              {tenants.length > 0 && (
+                <div className="mb-4">
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-[#5c5f7a]" />
+                    <Input
+                      placeholder="Search tenants by name, email, phone, or unit..."
+                      value={tenantSearch}
+                      onChange={(e) => setTenantSearch(e.target.value)}
+                      className="pl-10"
+                    />
+                  </div>
+                  {tenantSearch && (
+                    <p className="text-sm text-[#5c5f7a] mt-2">
+                      Showing {filteredTenants.length} of {tenants.length} tenants
+                    </p>
+                  )}
+                </div>
+              )}
+              {filteredTenants.length === 0 ? (
+                <div className="text-center py-8 text-[#5c5f7a]">
+                  {tenants.length === 0 ? 'No tenants yet' : 'No tenants match your search'}
+                </div>
               ) : (
                 <div className="overflow-x-auto">
                   <Table>
@@ -304,7 +372,7 @@ export default function PropertyManagementAssociation() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {tenants.map((tenant) => (
+                      {filteredTenants.map((tenant) => (
                         <TableRow key={tenant.id}>
                           <TableCell className="font-medium">
                             {tenant.first_name} {tenant.last_name}

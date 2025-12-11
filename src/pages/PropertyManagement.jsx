@@ -36,6 +36,23 @@ export default function PropertyManagement() {
     queryFn: () => base44.entities.Association.list('name', 500)
   });
 
+  const filteredAssociations = associations.filter(a => {
+    const term = searchTerm.trim().toLowerCase();
+    const statusMatch = statusFilter === 'all' || a.status === statusFilter;
+    
+    if (!term) return statusMatch;
+
+    const name = (a.name || '').toLowerCase();
+    const code = (a.code || '').toLowerCase();
+    const city = (a.city || '').toLowerCase();
+
+    return statusMatch && (
+      name.includes(term) ||
+      code.includes(term) ||
+      city.includes(term)
+    );
+  });
+
   const createMutation = useMutation({
     mutationFn: (data) => base44.entities.Association.create(data),
     onSuccess: () => {
@@ -135,7 +152,7 @@ export default function PropertyManagement() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {associations.map((association) => (
+                  {filteredAssociations.map((association) => (
                     <TableRow
                       key={association.id}
                       className="cursor-pointer hover:bg-[#f8f8fb]"
