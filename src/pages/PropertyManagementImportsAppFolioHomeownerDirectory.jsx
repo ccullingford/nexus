@@ -161,7 +161,7 @@ export default function PropertyManagementImportsAppFolioHomeownerDirectory() {
   };
 
   const targetFieldOptions = [
-    { value: '', label: '-- Skip --' },
+    { value: 'skip', label: '-- Skip --' },
     { value: 'association.name', label: 'Association: Name' },
     { value: 'association.code', label: 'Association: Code' },
     { value: 'association.street_address', label: 'Association: Street Address' },
@@ -312,8 +312,8 @@ export default function PropertyManagementImportsAppFolioHomeownerDirectory() {
                         </TableCell>
                         <TableCell>
                           <Select
-                            value={columnMapping[column] || ''}
-                            onValueChange={(value) => handleMappingChange(column, value)}
+                            value={columnMapping[column] || 'skip'}
+                            onValueChange={(value) => handleMappingChange(column, value === 'skip' ? '' : value)}
                           >
                             <SelectTrigger className="w-64">
                               <SelectValue placeholder="Select target field" />
