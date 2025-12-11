@@ -159,13 +159,15 @@ export default function PropertyManagementImportsAppFolioHomeownerDirectory() {
   const handleRunImport = async () => {
     setProcessing(true);
     try {
+      console.log('Raw column mapping:', columnMapping);
+      
       // Filter out 'skip' mappings
       const filteredColumnMapping = Object.fromEntries(
         Object.entries(columnMapping).filter(([, target]) => target !== 'skip' && target !== '')
       );
 
-      // Log the mappings for debugging
-      console.log('Column Mappings:', filteredColumnMapping);
+      console.log('Filtered column mapping:', filteredColumnMapping);
+      console.log('Number of mappings:', Object.keys(filteredColumnMapping).length);
       
       // Create import job
       const job = await createJobMutation.mutateAsync({
