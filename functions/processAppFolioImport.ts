@@ -238,18 +238,18 @@ Deno.serve(async (req) => {
 
       // Create/update owners
       for (const { associationKey, unitNumber, ownerData } of ownerList) {
+        const associationId = associationIdMap.get(associationKey);
+        const unitKey = `${associationKey}_${unitNumber}`;
+        const unitId = unitIdMap.get(unitKey);
+
+        const ownerName = ownerData.company_name || `${ownerData.first_name || ''} ${ownerData.last_name || ''}`.trim() || 'Unknown';
+
+        if (!associationId || !unitId) {
+          log += `Skipping owner ${ownerName} - missing association or unit\n`;
+          continue;
+        }
+
         try {
-          const associationId = associationIdMap.get(associationKey);
-          const unitKey = `${associationKey}_${unitNumber}`;
-          const unitId = unitIdMap.get(unitKey);
-
-          const ownerName = ownerData.company_name || `${ownerData.first_name} ${ownerData.last_name}`;
-
-          if (!associationId || !unitId) {
-            log += `Skipping owner ${ownerName} - missing association or unit\n`;
-            continue;
-          }
-
           // Check if owner exists - match by company name OR first/last name
           let existing = [];
           if (ownerData.company_name) {
