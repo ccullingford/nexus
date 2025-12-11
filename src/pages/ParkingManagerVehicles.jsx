@@ -60,6 +60,21 @@ export default function ParkingManagerVehicles() {
     queryFn: () => base44.entities.Tenant.list('last_name', 1000)
   });
 
+  const { data: makes = [] } = useQuery({
+    queryKey: ['vehicleMakes'],
+    queryFn: () => base44.entities.VehicleMake.list('name', 500)
+  });
+
+  const { data: models = [] } = useQuery({
+    queryKey: ['vehicleModels'],
+    queryFn: () => base44.entities.VehicleModel.list('name', 1000)
+  });
+
+  const { data: colors = [] } = useQuery({
+    queryKey: ['vehicleColors'],
+    queryFn: () => base44.entities.VehicleColor.list('name', 500)
+  });
+
   const archiveMutation = useMutation({
     mutationFn: ({ id, status }) => base44.entities.Vehicle.update(id, { status }),
     onSuccess: () => {
@@ -75,6 +90,24 @@ export default function ParkingManagerVehicles() {
   const getUnitNumber = (unitId) => {
     const unit = units.find(u => u.id === unitId);
     return unit?.unit_number || '—';
+  };
+
+  const getMakeName = (makeId) => {
+    if (!makeId) return '';
+    const make = makes.find(m => m.id === makeId);
+    return make?.name || '';
+  };
+
+  const getModelName = (modelId) => {
+    if (!modelId) return '';
+    const model = models.find(m => m.id === modelId);
+    return model?.name || '';
+  };
+
+  const getColorName = (colorId) => {
+    if (!colorId) return null;
+    const color = colors.find(c => c.id === colorId);
+    return color?.name || null;
   };
 
   const getOwnerName = (ownerId) => {
@@ -108,10 +141,10 @@ export default function ParkingManagerVehicles() {
     if (!searchTerm.trim()) return statusMatch;
     
     const term = searchTerm.toLowerCase();
-    const make = (v.make || '').toLowerCase();
-    const model = (v.model || '').toLowerCase();
+    const make = getMakeName(v.make_id).toLowerCase();
+    const model = getModelName(v.model_id).toLowerCase();
     const plate = (v.license_plate || '').toLowerCase();
-    const color = (v.color || '').toLowerCase();
+    const color = (getColorName(v.color_id) || '').toLowerCase();
     const associationName = getAssociationName(v.association_id).toLowerCase();
     const unitNumber = getUnitNumber(v.unit_id).toLowerCase();
     const personName = getPersonName(v).toLowerCase();
@@ -133,7 +166,9 @@ export default function ParkingManagerVehicles() {
   };
 
   const handleArchive = (vehicle) => {
-    if (confirm(`Archive vehicle ${vehicle.make} ${vehicle.model} (${vehicle.license_plate})?`)) {
+    const makeName = getMakeName(vehicle.make_id);
+    const modelName = getModelName(vehicle.model_id);
+    if (confirm(`Archive vehicle ${makeName} ${modelName} (${vehicle.license_plate})?`)) {
       archiveMutation.mutate({ id: vehicle.id, status: 'archived' });
     }
   };
@@ -241,14 +276,14 @@ export default function ParkingManagerVehicles() {
                       <TableCell>
                         <div>
                           <p className="font-medium">
-                            {vehicle.year} {vehicle.make} {vehicle.model}
+                            {vehicle.year} {getMakeName(vehicle.make_id)} {getModelName(vehicle.model_id)}
                           </p>
                           <div className="flex items-center gap-2 mt-1">
                             <Badge variant="secondary" className={`${vehicleTypeColors[vehicle.vehicle_type]} border text-xs capitalize`}>
                               {vehicle.vehicle_type}
                             </Badge>
-                            {vehicle.color && (
-                              <span className="text-xs text-[#5c5f7a]">{vehicle.color}</span>
+                            {getColorName(vehicle.color_id) && (
+                              <span className="text-xs text-[#5c5f7a]">{getColorName(vehicle.color_id)}</span>
                             )}
                           </div>
                         </div>

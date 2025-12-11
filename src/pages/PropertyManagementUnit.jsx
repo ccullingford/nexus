@@ -64,6 +64,21 @@ export default function PropertyManagementUnit() {
     enabled: !!unitId
   });
 
+  const { data: makes = [] } = useQuery({
+    queryKey: ['vehicleMakes'],
+    queryFn: () => base44.entities.VehicleMake.list('name', 500)
+  });
+
+  const { data: models = [] } = useQuery({
+    queryKey: ['vehicleModels'],
+    queryFn: () => base44.entities.VehicleModel.list('name', 1000)
+  });
+
+  const { data: colors = [] } = useQuery({
+    queryKey: ['vehicleColors'],
+    queryFn: () => base44.entities.VehicleColor.list('name', 500)
+  });
+
   if (isLoading) {
     return <div className="text-center py-12 text-[#5c5f7a]">Loading unit...</div>;
   }
@@ -71,6 +86,24 @@ export default function PropertyManagementUnit() {
   if (!unit) {
     return <div className="text-center py-12 text-[#5c5f7a]">Unit not found</div>;
   }
+
+  const getMakeName = (makeId) => {
+    if (!makeId) return '';
+    const make = makes.find(m => m.id === makeId);
+    return make?.name || '';
+  };
+
+  const getModelName = (modelId) => {
+    if (!modelId) return '';
+    const model = models.find(m => m.id === modelId);
+    return model?.name || '';
+  };
+
+  const getColorName = (colorId) => {
+    if (!colorId) return null;
+    const color = colors.find(c => c.id === colorId);
+    return color?.name || null;
+  };
 
   return (
     <div className="max-w-5xl mx-auto space-y-6">
@@ -275,11 +308,11 @@ export default function PropertyManagementUnit() {
                       <Car className="w-5 h-5 text-[#414257] mt-0.5" />
                       <div>
                         <p className="font-semibold text-[#414257]">
-                          {vehicle.year} {vehicle.make} {vehicle.model}
+                          {vehicle.year} {getMakeName(vehicle.make_id)} {getModelName(vehicle.model_id)}
                         </p>
                         <div className="mt-1 space-y-1 text-sm text-[#5c5f7a]">
                           <p>License Plate: {vehicle.license_plate} {vehicle.state && `(${vehicle.state})`}</p>
-                          {vehicle.color && <p>Color: {vehicle.color}</p>}
+                          {getColorName(vehicle.color_id) && <p>Color: {getColorName(vehicle.color_id)}</p>}
                           {vehicle.parking_spot && <p>Parking: {vehicle.parking_spot}</p>}
                           <p className="capitalize">Type: {vehicle.vehicle_type}</p>
                         </div>

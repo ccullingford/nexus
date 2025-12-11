@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -7,6 +7,61 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
+import { Plus } from 'lucide-react';
+
+const US_STATES = [
+  { code: 'AL', name: 'Alabama' },
+  { code: 'AK', name: 'Alaska' },
+  { code: 'AZ', name: 'Arizona' },
+  { code: 'AR', name: 'Arkansas' },
+  { code: 'CA', name: 'California' },
+  { code: 'CO', name: 'Colorado' },
+  { code: 'CT', name: 'Connecticut' },
+  { code: 'DE', name: 'Delaware' },
+  { code: 'DC', name: 'District of Columbia' },
+  { code: 'FL', name: 'Florida' },
+  { code: 'GA', name: 'Georgia' },
+  { code: 'HI', name: 'Hawaii' },
+  { code: 'ID', name: 'Idaho' },
+  { code: 'IL', name: 'Illinois' },
+  { code: 'IN', name: 'Indiana' },
+  { code: 'IA', name: 'Iowa' },
+  { code: 'KS', name: 'Kansas' },
+  { code: 'KY', name: 'Kentucky' },
+  { code: 'LA', name: 'Louisiana' },
+  { code: 'ME', name: 'Maine' },
+  { code: 'MD', name: 'Maryland' },
+  { code: 'MA', name: 'Massachusetts' },
+  { code: 'MI', name: 'Michigan' },
+  { code: 'MN', name: 'Minnesota' },
+  { code: 'MS', name: 'Mississippi' },
+  { code: 'MO', name: 'Missouri' },
+  { code: 'MT', name: 'Montana' },
+  { code: 'NE', name: 'Nebraska' },
+  { code: 'NV', name: 'Nevada' },
+  { code: 'NH', name: 'New Hampshire' },
+  { code: 'NJ', name: 'New Jersey' },
+  { code: 'NM', name: 'New Mexico' },
+  { code: 'NY', name: 'New York' },
+  { code: 'NC', name: 'North Carolina' },
+  { code: 'ND', name: 'North Dakota' },
+  { code: 'OH', name: 'Ohio' },
+  { code: 'OK', name: 'Oklahoma' },
+  { code: 'OR', name: 'Oregon' },
+  { code: 'PA', name: 'Pennsylvania' },
+  { code: 'RI', name: 'Rhode Island' },
+  { code: 'SC', name: 'South Carolina' },
+  { code: 'SD', name: 'South Dakota' },
+  { code: 'TN', name: 'Tennessee' },
+  { code: 'TX', name: 'Texas' },
+  { code: 'UT', name: 'Utah' },
+  { code: 'VT', name: 'Vermont' },
+  { code: 'VA', name: 'Virginia' },
+  { code: 'WA', name: 'Washington' },
+  { code: 'WV', name: 'West Virginia' },
+  { code: 'WI', name: 'Wisconsin' },
+  { code: 'WY', name: 'Wyoming' }
+];
 
 export default function VehicleFormModal({ open, onClose, vehicle, associations, units, owners, tenants }) {
   const queryClient = useQueryClient();
@@ -16,16 +71,70 @@ export default function VehicleFormModal({ open, onClose, vehicle, associations,
     unit_id: '',
     owner_id: '',
     tenant_id: '',
-    make: '',
-    model: '',
+    make_id: '',
+    model_id: '',
     year: '',
-    color: '',
+    color_id: '',
     license_plate: '',
     state: '',
     parking_spot: '',
     vehicle_type: 'car',
     status: 'active',
     notes: ''
+  });
+
+  const [newMake, setNewMake] = useState('');
+  const [newModel, setNewModel] = useState('');
+  const [newColor, setNewColor] = useState('');
+  const [showNewMake, setShowNewMake] = useState(false);
+  const [showNewModel, setShowNewModel] = useState(false);
+  const [showNewColor, setShowNewColor] = useState(false);
+
+  // Fetch lookups
+  const { data: makes = [] } = useQuery({
+    queryKey: ['vehicleMakes'],
+    queryFn: () => base44.entities.VehicleMake.list('name', 500)
+  });
+
+  const { data: allModels = [] } = useQuery({
+    queryKey: ['vehicleModels'],
+    queryFn: () => base44.entities.VehicleModel.list('name', 1000)
+  });
+
+  const { data: colors = [] } = useQuery({
+    queryKey: ['vehicleColors'],
+    queryFn: () => base44.entities.VehicleColor.list('name', 500)
+  });
+
+  // Mutations for creating new lookups
+  const createMakeMutation = useMutation({
+    mutationFn: (name) => base44.entities.VehicleMake.create({ name }),
+    onSuccess: (newMake) => {
+      queryClient.invalidateQueries({ queryKey: ['vehicleMakes'] });
+      setFormData({ ...formData, make_id: newMake.id, model_id: '' });
+      setNewMake('');
+      setShowNewMake(false);
+    }
+  });
+
+  const createModelMutation = useMutation({
+    mutationFn: ({ make_id, name }) => base44.entities.VehicleModel.create({ make_id, name }),
+    onSuccess: (newModel) => {
+      queryClient.invalidateQueries({ queryKey: ['vehicleModels'] });
+      setFormData({ ...formData, model_id: newModel.id });
+      setNewModel('');
+      setShowNewModel(false);
+    }
+  });
+
+  const createColorMutation = useMutation({
+    mutationFn: (name) => base44.entities.VehicleColor.create({ name }),
+    onSuccess: (newColor) => {
+      queryClient.invalidateQueries({ queryKey: ['vehicleColors'] });
+      setFormData({ ...formData, color_id: newColor.id });
+      setNewColor('');
+      setShowNewColor(false);
+    }
   });
 
   useEffect(() => {
@@ -35,10 +144,10 @@ export default function VehicleFormModal({ open, onClose, vehicle, associations,
         unit_id: vehicle.unit_id || '',
         owner_id: vehicle.owner_id || '',
         tenant_id: vehicle.tenant_id || '',
-        make: vehicle.make || '',
-        model: vehicle.model || '',
+        make_id: vehicle.make_id || '',
+        model_id: vehicle.model_id || '',
         year: vehicle.year || '',
-        color: vehicle.color || '',
+        color_id: vehicle.color_id || '',
         license_plate: vehicle.license_plate || '',
         state: vehicle.state || '',
         parking_spot: vehicle.parking_spot || '',
@@ -52,10 +161,10 @@ export default function VehicleFormModal({ open, onClose, vehicle, associations,
         unit_id: '',
         owner_id: '',
         tenant_id: '',
-        make: '',
-        model: '',
+        make_id: '',
+        model_id: '',
         year: '',
-        color: '',
+        color_id: '',
         license_plate: '',
         state: '',
         parking_spot: '',
@@ -64,6 +173,9 @@ export default function VehicleFormModal({ open, onClose, vehicle, associations,
         notes: ''
       });
     }
+    setShowNewMake(false);
+    setShowNewModel(false);
+    setShowNewColor(false);
   }, [vehicle, open]);
 
   const createMutation = useMutation({
@@ -115,6 +227,10 @@ export default function VehicleFormModal({ open, onClose, vehicle, associations,
 
   const filteredTenants = formData.unit_id 
     ? tenants.filter(t => t.unit_id === formData.unit_id)
+    : [];
+
+  const filteredModels = formData.make_id
+    ? allModels.filter(m => m.make_id === formData.make_id)
     : [];
 
   return (
@@ -235,27 +351,142 @@ export default function VehicleFormModal({ open, onClose, vehicle, associations,
               </Select>
             </div>
 
-            {/* Vehicle Details */}
-            <div>
+            {/* Make */}
+            <div className="col-span-2">
               <Label>Make *</Label>
-              <Input
-                value={formData.make}
-                onChange={(e) => setFormData({ ...formData, make: e.target.value })}
-                placeholder="Toyota"
-                required
-              />
+              {showNewMake ? (
+                <div className="flex gap-2">
+                  <Input
+                    value={newMake}
+                    onChange={(e) => setNewMake(e.target.value)}
+                    placeholder="Enter new make"
+                    autoFocus
+                  />
+                  <Button
+                    type="button"
+                    onClick={() => {
+                      if (newMake.trim()) {
+                        createMakeMutation.mutate(newMake.trim());
+                      }
+                    }}
+                    disabled={!newMake.trim() || createMakeMutation.isPending}
+                  >
+                    Add
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => {
+                      setShowNewMake(false);
+                      setNewMake('');
+                    }}
+                  >
+                    Cancel
+                  </Button>
+                </div>
+              ) : (
+                <div className="flex gap-2">
+                  <Select
+                    value={formData.make_id}
+                    onValueChange={(value) => {
+                      setFormData({ ...formData, make_id: value, model_id: '' });
+                    }}
+                    required
+                  >
+                    <SelectTrigger className="flex-1">
+                      <SelectValue placeholder="Select make" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {makes.map(make => (
+                        <SelectItem key={make.id} value={make.id}>
+                          {make.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="icon"
+                    onClick={() => setShowNewMake(true)}
+                  >
+                    <Plus className="w-4 h-4" />
+                  </Button>
+                </div>
+              )}
             </div>
 
-            <div>
+            {/* Model */}
+            <div className="col-span-2">
               <Label>Model *</Label>
-              <Input
-                value={formData.model}
-                onChange={(e) => setFormData({ ...formData, model: e.target.value })}
-                placeholder="Camry"
-                required
-              />
+              {showNewModel ? (
+                <div className="flex gap-2">
+                  <Input
+                    value={newModel}
+                    onChange={(e) => setNewModel(e.target.value)}
+                    placeholder="Enter new model"
+                    autoFocus
+                  />
+                  <Button
+                    type="button"
+                    onClick={() => {
+                      if (newModel.trim() && formData.make_id) {
+                        createModelMutation.mutate({ 
+                          make_id: formData.make_id, 
+                          name: newModel.trim() 
+                        });
+                      }
+                    }}
+                    disabled={!newModel.trim() || !formData.make_id || createModelMutation.isPending}
+                  >
+                    Add
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => {
+                      setShowNewModel(false);
+                      setNewModel('');
+                    }}
+                  >
+                    Cancel
+                  </Button>
+                </div>
+              ) : (
+                <div className="flex gap-2">
+                  <Select
+                    value={formData.model_id}
+                    onValueChange={(value) => {
+                      setFormData({ ...formData, model_id: value });
+                    }}
+                    disabled={!formData.make_id}
+                    required
+                  >
+                    <SelectTrigger className="flex-1">
+                      <SelectValue placeholder="Select model" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {filteredModels.map(model => (
+                        <SelectItem key={model.id} value={model.id}>
+                          {model.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="icon"
+                    onClick={() => setShowNewModel(true)}
+                    disabled={!formData.make_id}
+                  >
+                    <Plus className="w-4 h-4" />
+                  </Button>
+                </div>
+              )}
             </div>
 
+            {/* Year & Color */}
             <div>
               <Label>Year</Label>
               <Input
@@ -270,13 +501,71 @@ export default function VehicleFormModal({ open, onClose, vehicle, associations,
 
             <div>
               <Label>Color</Label>
-              <Input
-                value={formData.color}
-                onChange={(e) => setFormData({ ...formData, color: e.target.value })}
-                placeholder="Silver"
-              />
+              {showNewColor ? (
+                <div className="flex gap-2">
+                  <Input
+                    value={newColor}
+                    onChange={(e) => setNewColor(e.target.value)}
+                    placeholder="Enter new color"
+                    autoFocus
+                  />
+                  <Button
+                    type="button"
+                    onClick={() => {
+                      if (newColor.trim()) {
+                        createColorMutation.mutate(newColor.trim());
+                      }
+                    }}
+                    disabled={!newColor.trim() || createColorMutation.isPending}
+                    size="sm"
+                  >
+                    Add
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      setShowNewColor(false);
+                      setNewColor('');
+                    }}
+                  >
+                    Cancel
+                  </Button>
+                </div>
+              ) : (
+                <div className="flex gap-2">
+                  <Select
+                    value={formData.color_id}
+                    onValueChange={(value) => {
+                      setFormData({ ...formData, color_id: value });
+                    }}
+                  >
+                    <SelectTrigger className="flex-1">
+                      <SelectValue placeholder="Select color" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value={null}>None</SelectItem>
+                      {colors.map(color => (
+                        <SelectItem key={color.id} value={color.id}>
+                          {color.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="icon"
+                    onClick={() => setShowNewColor(true)}
+                  >
+                    <Plus className="w-4 h-4" />
+                  </Button>
+                </div>
+              )}
             </div>
 
+            {/* License Plate & State */}
             <div>
               <Label>License Plate *</Label>
               <Input
@@ -289,14 +578,25 @@ export default function VehicleFormModal({ open, onClose, vehicle, associations,
 
             <div>
               <Label>State</Label>
-              <Input
+              <Select
                 value={formData.state}
-                onChange={(e) => setFormData({ ...formData, state: e.target.value })}
-                placeholder="TX"
-                maxLength={2}
-              />
+                onValueChange={(value) => setFormData({ ...formData, state: value })}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select state" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value={null}>None</SelectItem>
+                  {US_STATES.map(state => (
+                    <SelectItem key={state.code} value={state.code}>
+                      {state.code} - {state.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
 
+            {/* Vehicle Type & Parking */}
             <div>
               <Label>Vehicle Type</Label>
               <Select
@@ -326,6 +626,7 @@ export default function VehicleFormModal({ open, onClose, vehicle, associations,
               />
             </div>
 
+            {/* Notes */}
             <div className="col-span-2">
               <Label>Notes</Label>
               <Textarea
