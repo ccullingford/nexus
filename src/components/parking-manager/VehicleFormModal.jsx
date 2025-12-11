@@ -106,6 +106,11 @@ export default function VehicleFormModal({ open, onClose, vehicle, associations,
     queryFn: () => base44.entities.VehicleColor.list('name', 500)
   });
 
+  const { data: bodyStyles = [] } = useQuery({
+    queryKey: ['vehicleBodyStyles'],
+    queryFn: () => base44.entities.VehicleBodyStyle.list('name', 500)
+  });
+
   // Mutations for creating new lookups
   const createMakeMutation = useMutation({
     mutationFn: (name) => base44.entities.VehicleMake.create({ name }),

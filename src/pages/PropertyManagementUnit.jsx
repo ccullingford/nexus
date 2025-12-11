@@ -314,7 +314,7 @@ export default function PropertyManagementUnit() {
                           <p>License Plate: {vehicle.license_plate} {vehicle.state && `(${vehicle.state})`}</p>
                           {getColorName(vehicle.color_id) && <p>Color: {getColorName(vehicle.color_id)}</p>}
                           {vehicle.parking_spot && <p>Parking: {vehicle.parking_spot}</p>}
-                          <p className="capitalize">Type: {vehicle.vehicle_type}</p>
+                          {vehicle.body_style_label && <p>Body Style: {vehicle.body_style_label}</p>}
                         </div>
                       </div>
                     </div>
