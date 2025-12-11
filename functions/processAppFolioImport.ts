@@ -153,90 +153,112 @@ Deno.serve(async (req) => {
       log += `Found ${unitMap.size} unique units\n`;
       log += `Found ${ownerList.length} owners\n`;
 
+      // Fetch all existing data once
+      const allAssociations = await base44.asServiceRole.entities.Association.list();
+      const allUnits = await base44.asServiceRole.entities.Unit.list();
+      const allOwners = await base44.asServiceRole.entities.Owner.list();
+
+      log += `Fetched ${allAssociations.length} existing associations, ${allUnits.length} units, ${allOwners.length} owners\n`;
+
       // Create/update associations
       const associationIdMap = new Map();
+      const associationsToCreate = [];
+      const associationsToUpdate = [];
+
       for (const [key, data] of associationMap) {
+        const normalizedName = data.name.trim();
+        const existing = allAssociations.find(a => 
+          a.name.trim().toLowerCase() === normalizedName.toLowerCase()
+        );
+
+        if (existing) {
+          associationsToUpdate.push({ id: existing.id, data });
+          associationIdMap.set(key, existing.id);
+        } else {
+          associationsToCreate.push({ key, data: { ...data, status: 'active' } });
+        }
+      }
+
+      // Bulk create associations
+      if (associationsToCreate.length > 0) {
+        const created = await base44.asServiceRole.entities.Association.bulkCreate(
+          associationsToCreate.map(a => a.data)
+        );
+        created.forEach((assoc, idx) => {
+          associationIdMap.set(associationsToCreate[idx].key, assoc.id);
+          createdRecords++;
+          log += `Created association: ${assoc.name}\n`;
+        });
+      }
+
+      // Update associations one by one (no bulk update API)
+      for (const { id, data } of associationsToUpdate) {
         try {
-          // Normalize the name (trim whitespace, normalize case for comparison)
-          const normalizedName = data.name.trim();
-
-          // Check if association exists (case-insensitive, trimmed)
-          const allAssociations = await base44.asServiceRole.entities.Association.list();
-          const existing = allAssociations.filter(a => 
-            a.name.trim().toLowerCase() === normalizedName.toLowerCase()
-          );
-
-          let associationId;
-          if (existing.length > 0) {
-            // Update existing
-            await base44.asServiceRole.entities.Association.update(existing[0].id, data);
-            associationId = existing[0].id;
-            updatedRecords++;
-            log += `Updated association: ${data.name}\n`;
-          } else {
-            // Create new
-            const newAssoc = await base44.asServiceRole.entities.Association.create({
-              ...data,
-              status: 'active'
-            });
-            associationId = newAssoc.id;
-            createdRecords++;
-            log += `Created association: ${data.name}\n`;
-          }
-          
-          associationIdMap.set(key, associationId);
+          await base44.asServiceRole.entities.Association.update(id, data);
+          updatedRecords++;
+          log += `Updated association: ${data.name}\n`;
         } catch (error) {
           errorCount++;
-          log += `Error with association ${key}: ${error.message}\n`;
+          log += `Error updating association: ${error.message}\n`;
         }
       }
 
       // Create/update units
       const unitIdMap = new Map();
+      const unitsToCreate = [];
+      const unitsToUpdate = [];
+
       for (const [unitKey, { associationKey, unitData }] of unitMap) {
-        try {
-          const associationId = associationIdMap.get(associationKey);
-          if (!associationId) {
-            log += `Skipping unit ${unitData.unit_number} - association not found\n`;
-            continue;
-          }
+        const associationId = associationIdMap.get(associationKey);
+        if (!associationId) {
+          log += `Skipping unit ${unitData.unit_number} - association not found\n`;
+          continue;
+        }
 
-          // Check if unit exists
-          const existing = await base44.asServiceRole.entities.Unit.filter({
-            association_id: associationId,
-            unit_number: unitData.unit_number
+        const existing = allUnits.find(u => 
+          u.association_id === associationId && 
+          u.unit_number === unitData.unit_number
+        );
+
+        if (existing) {
+          unitsToUpdate.push({ id: existing.id, data: { ...unitData, association_id: associationId } });
+          unitIdMap.set(unitKey, existing.id);
+        } else {
+          unitsToCreate.push({ 
+            key: unitKey, 
+            data: { ...unitData, association_id: associationId, status: 'occupied' } 
           });
+        }
+      }
 
-          let unitId;
-          if (existing.length > 0) {
-            // Update existing
-            await base44.asServiceRole.entities.Unit.update(existing[0].id, {
-              ...unitData,
-              association_id: associationId
-            });
-            unitId = existing[0].id;
-            updatedRecords++;
-            log += `Updated unit: ${unitData.unit_number}\n`;
-          } else {
-            // Create new
-            const newUnit = await base44.asServiceRole.entities.Unit.create({
-              ...unitData,
-              association_id: associationId,
-              status: 'occupied'
-            });
-            unitId = newUnit.id;
-            createdRecords++;
-            log += `Created unit: ${unitData.unit_number}\n`;
-          }
-          
-          unitIdMap.set(unitKey, unitId);
+      // Bulk create units
+      if (unitsToCreate.length > 0) {
+        const created = await base44.asServiceRole.entities.Unit.bulkCreate(
+          unitsToCreate.map(u => u.data)
+        );
+        created.forEach((unit, idx) => {
+          unitIdMap.set(unitsToCreate[idx].key, unit.id);
+          createdRecords++;
+          log += `Created unit: ${unit.unit_number}\n`;
+        });
+      }
+
+      // Update units one by one
+      for (const { id, data } of unitsToUpdate) {
+        try {
+          await base44.asServiceRole.entities.Unit.update(id, data);
+          updatedRecords++;
+          log += `Updated unit: ${data.unit_number}\n`;
         } catch (error) {
           errorCount++;
-          log += `Error with unit ${unitKey}: ${error.message}\n`;
+          log += `Error updating unit: ${error.message}\n`;
         }
       }
 
       // Create/update owners
+      const ownersToCreate = [];
+      const ownersToUpdate = [];
+
       for (const { associationKey, unitNumber, ownerData } of ownerList) {
         const associationId = associationIdMap.get(associationKey);
         const unitKey = `${associationKey}_${unitNumber}`;
@@ -249,49 +271,55 @@ Deno.serve(async (req) => {
           continue;
         }
 
-        try {
-          // Check if owner exists - match by company name OR first/last name
-          let existing = [];
-          if (ownerData.company_name) {
-            existing = await base44.asServiceRole.entities.Owner.filter({
-              association_id: associationId,
-              unit_id: unitId,
-              company_name: ownerData.company_name
-            });
-          } else if (ownerData.first_name && ownerData.last_name) {
-            existing = await base44.asServiceRole.entities.Owner.filter({
-              association_id: associationId,
-              unit_id: unitId,
-              first_name: ownerData.first_name,
-              last_name: ownerData.last_name
-            });
-          }
+        // Check if owner exists - match by company name OR first/last name
+        let existing = null;
+        if (ownerData.company_name) {
+          existing = allOwners.find(o => 
+            o.association_id === associationId &&
+            o.unit_id === unitId &&
+            o.company_name === ownerData.company_name
+          );
+        } else if (ownerData.first_name && ownerData.last_name) {
+          existing = allOwners.find(o => 
+            o.association_id === associationId &&
+            o.unit_id === unitId &&
+            o.first_name === ownerData.first_name &&
+            o.last_name === ownerData.last_name
+          );
+        }
 
-          if (existing.length > 0) {
-            // Update existing
-            await base44.asServiceRole.entities.Owner.update(existing[0].id, {
-              ...ownerData,
-              association_id: associationId,
-              unit_id: unitId
-            });
-            updatedRecords++;
-            log += `Updated owner: ${ownerName}\n`;
-          } else {
-            // Create new
-            await base44.asServiceRole.entities.Owner.create({
-              ...ownerData,
-              association_id: associationId,
-              unit_id: unitId,
-              is_primary_owner: true
-            });
-            createdRecords++;
-            log += `Created owner: ${ownerName}\n`;
-          }
-          } catch (error) {
+        if (existing) {
+          ownersToUpdate.push({ id: existing.id, data: { ...ownerData, association_id: associationId, unit_id: unitId }, name: ownerName });
+        } else {
+          ownersToCreate.push({ 
+            data: { ...ownerData, association_id: associationId, unit_id: unitId, is_primary_owner: true },
+            name: ownerName
+          });
+        }
+      }
+
+      // Bulk create owners
+      if (ownersToCreate.length > 0) {
+        const created = await base44.asServiceRole.entities.Owner.bulkCreate(
+          ownersToCreate.map(o => o.data)
+        );
+        created.forEach((owner, idx) => {
+          createdRecords++;
+          log += `Created owner: ${ownersToCreate[idx].name}\n`;
+        });
+      }
+
+      // Update owners one by one
+      for (const { id, data, name } of ownersToUpdate) {
+        try {
+          await base44.asServiceRole.entities.Owner.update(id, data);
+          updatedRecords++;
+          log += `Updated owner: ${name}\n`;
+        } catch (error) {
           errorCount++;
-          log += `Error with owner ${ownerName}: ${error.message}\n`;
-          }
-          }
+          log += `Error updating owner ${name}: ${error.message}\n`;
+        }
+      }
 
       // Update job as completed
       await base44.asServiceRole.entities.ImportJob.update(job.id, {
