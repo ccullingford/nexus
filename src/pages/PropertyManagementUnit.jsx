@@ -4,13 +4,14 @@ import { base44 } from '@/api/base44Client';
 import { createPageUrl } from '@/utils';
 import { usePermissions } from '@/components/usePermissions';
 import { PERMISSIONS } from '@/components/permissions';
-import { ArrowLeft, Plus, Edit, Users, Home, Car } from 'lucide-react';
+import { ArrowLeft, Plus, Edit, Users, Home, Car, FileCheck } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import OwnerFormModal from '@/components/property-management/OwnerFormModal';
 import TenantFormModal from '@/components/property-management/TenantFormModal';
+import PermitFormModal from '@/components/parking-manager/PermitFormModal';
 import { format } from 'date-fns';
 
 const statusColors = {
@@ -27,6 +28,7 @@ export default function PropertyManagementUnit() {
 
   const [showOwnerModal, setShowOwnerModal] = useState(false);
   const [showTenantModal, setShowTenantModal] = useState(false);
+  const [showPermitModal, setShowPermitModal] = useState(false);
 
   const { data: unit, isLoading } = useQuery({
     queryKey: ['unit', unitId],
@@ -77,6 +79,12 @@ export default function PropertyManagementUnit() {
   const { data: colors = [] } = useQuery({
     queryKey: ['vehicleColors'],
     queryFn: () => base44.entities.VehicleColor.list('name', 500)
+  });
+
+  const { data: permits = [] } = useQuery({
+    queryKey: ['permits', unitId],
+    queryFn: () => base44.entities.Permit.filter({ unit_id: unitId }, '-issue_date', 500),
+    enabled: !!unitId
   });
 
   if (isLoading) {
@@ -335,6 +343,67 @@ export default function PropertyManagementUnit() {
         </CardContent>
       </Card>
 
+      {/* Permits */}
+      <Card className="border-0 shadow-sm">
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <CardTitle className="text-[#414257]">Parking Permits</CardTitle>
+            {hasPermission(PERMISSIONS.PARKING_MANAGER_VEHICLES_EDIT) && (
+              <Button
+                onClick={() => setShowPermitModal(true)}
+                className="bg-[#414257] hover:bg-[#5c5f7a]"
+                size="sm"
+              >
+                <Plus className="w-4 h-4 mr-2" />
+                Issue Permit
+              </Button>
+            )}
+          </div>
+        </CardHeader>
+        <CardContent>
+          {permits.length === 0 ? (
+            <div className="text-center py-8 text-[#5c5f7a]">
+              <FileCheck className="w-12 h-12 mx-auto mb-3 opacity-50" />
+              <p>No permits issued for this unit</p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {permits.filter(p => p.status === 'active').map((permit) => (
+                <div key={permit.id} className="p-4 bg-[#e3e4ed] rounded-lg">
+                  <div className="flex items-start justify-between">
+                    <div className="flex items-start gap-3">
+                      <FileCheck className="w-5 h-5 text-[#414257] mt-0.5" />
+                      <div>
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <p className="font-semibold text-[#414257]">
+                            {permit.permit_number || 'No Number'}
+                          </p>
+                          <Badge className={`capitalize ${
+                            permit.permit_type === 'resident' ? 'bg-blue-100 text-blue-800' :
+                            permit.permit_type === 'visitor' ? 'bg-purple-100 text-purple-800' :
+                            'bg-gray-100 text-gray-800'
+                          }`}>
+                            {permit.permit_type}
+                          </Badge>
+                          <Badge className="bg-green-100 text-green-800">Active</Badge>
+                        </div>
+                        <div className="mt-1 space-y-1 text-sm text-[#5c5f7a]">
+                          <p>Issued: {permit.issue_date ? format(new Date(permit.issue_date), 'MMM d, yyyy') : '—'}</p>
+                          {permit.expiration_date && (
+                            <p>Expires: {format(new Date(permit.expiration_date), 'MMM d, yyyy')}</p>
+                          )}
+                          {permit.notes && <p className="italic">{permit.notes}</p>}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
       {/* Modals */}
       <OwnerFormModal
         open={showOwnerModal}
@@ -349,6 +418,12 @@ export default function PropertyManagementUnit() {
         associationId={associationId}
         units={[unit]}
         preselectedUnitId={unitId}
+      />
+      <PermitFormModal
+        open={showPermitModal}
+        onClose={() => setShowPermitModal(false)}
+        associationId={associationId}
+        unitId={unitId}
       />
     </div>
   );

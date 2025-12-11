@@ -36,6 +36,8 @@ export const PERMISSIONS = {
   PARKING_MANAGER_ACCESS: 'parking-manager:access',
   PARKING_MANAGER_VEHICLES_VIEW: 'parking-manager:vehicles:view',
   PARKING_MANAGER_VEHICLES_EDIT: 'parking-manager:vehicles:edit',
+  PARKING_MANAGER_PERMITS_VIEW: 'parking-manager:permits:view',
+  PARKING_MANAGER_PERMITS_EDIT: 'parking-manager:permits:edit',
   
   // Association Book
   ASSOCIATION_BOOK_VIEW: 'association-book:view',
