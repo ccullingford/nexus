@@ -214,16 +214,22 @@ Deno.serve(async (req) => {
         }
       }
 
-      // Bulk create associations
-      if (associationsToCreate.length > 0) {
+      // Bulk create associations in batches of 50
+      const BATCH_SIZE = 50;
+      for (let i = 0; i < associationsToCreate.length; i += BATCH_SIZE) {
+        const batch = associationsToCreate.slice(i, i + BATCH_SIZE);
         const created = await base44.asServiceRole.entities.Association.bulkCreate(
-          associationsToCreate.map(a => a.data)
+          batch.map(a => a.data)
         );
         created.forEach((assoc, idx) => {
-          associationIdMap.set(associationsToCreate[idx].key, assoc.id);
+          associationIdMap.set(batch[idx].key, assoc.id);
           createdRecords++;
           log += `Created association: ${assoc.name}\n`;
         });
+        // Delay between batches
+        if (i + BATCH_SIZE < associationsToCreate.length) {
+          await new Promise(resolve => setTimeout(resolve, 200));
+        }
       }
 
       // Update associations one by one with delay to avoid rate limits
@@ -271,16 +277,21 @@ Deno.serve(async (req) => {
         }
       }
 
-      // Bulk create units
-      if (unitsToCreate.length > 0) {
+      // Bulk create units in batches of 50
+      for (let i = 0; i < unitsToCreate.length; i += BATCH_SIZE) {
+        const batch = unitsToCreate.slice(i, i + BATCH_SIZE);
         const created = await base44.asServiceRole.entities.Unit.bulkCreate(
-          unitsToCreate.map(u => u.data)
+          batch.map(u => u.data)
         );
         created.forEach((unit, idx) => {
-          unitIdMap.set(unitsToCreate[idx].key, unit.id);
+          unitIdMap.set(batch[idx].key, unit.id);
           createdRecords++;
           log += `Created unit: ${unit.unit_number}\n`;
         });
+        // Delay between batches
+        if (i + BATCH_SIZE < unitsToCreate.length) {
+          await new Promise(resolve => setTimeout(resolve, 200));
+        }
       }
 
       // Update units one by one with delay to avoid rate limits
@@ -347,15 +358,20 @@ Deno.serve(async (req) => {
         }
       }
 
-      // Bulk create owners
-      if (ownersToCreate.length > 0) {
+      // Bulk create owners in batches of 50
+      for (let i = 0; i < ownersToCreate.length; i += BATCH_SIZE) {
+        const batch = ownersToCreate.slice(i, i + BATCH_SIZE);
         const created = await base44.asServiceRole.entities.Owner.bulkCreate(
-          ownersToCreate.map(o => o.data)
+          batch.map(o => o.data)
         );
         created.forEach((owner, idx) => {
           createdRecords++;
-          log += `Created owner: ${ownersToCreate[idx].name}\n`;
+          log += `Created owner: ${batch[idx].name}\n`;
         });
+        // Delay between batches
+        if (i + BATCH_SIZE < ownersToCreate.length) {
+          await new Promise(resolve => setTimeout(resolve, 200));
+        }
       }
 
       // Update owners one by one with delay to avoid rate limits
