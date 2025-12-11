@@ -67,6 +67,8 @@ Deno.serve(async (req) => {
       const lines = csvText.split('\n').filter(line => line.trim());
       const headers = parseCSVLine(lines[0]).map(h => h.replace(/^"|"$/g, ''));
       
+      const columnMappings = job.column_mappings || {};
+      
       log += `Found ${lines.length - 1} rows to process\n`;
       log += `Headers: ${headers.join(', ')}\n`;
       log += `Column mappings: ${JSON.stringify(columnMappings, null, 2)}\n`;
@@ -75,8 +77,6 @@ Deno.serve(async (req) => {
       await base44.asServiceRole.entities.ImportJob.update(job.id, {
         total_rows: lines.length - 1
       });
-
-      const columnMappings = job.column_mappings || {};
       
       // Group rows by association to avoid duplicates
       const associationMap = new Map();
