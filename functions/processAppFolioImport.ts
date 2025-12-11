@@ -191,12 +191,17 @@ Deno.serve(async (req) => {
         });
       }
 
-      // Update associations one by one (no bulk update API)
-      for (const { id, data } of associationsToUpdate) {
+      // Update associations one by one with delay to avoid rate limits
+      for (let i = 0; i < associationsToUpdate.length; i++) {
+        const { id, data } = associationsToUpdate[i];
         try {
           await base44.asServiceRole.entities.Association.update(id, data);
           updatedRecords++;
           log += `Updated association: ${data.name}\n`;
+          // Small delay every 10 updates to avoid rate limits
+          if ((i + 1) % 10 === 0) {
+            await new Promise(resolve => setTimeout(resolve, 100));
+          }
         } catch (error) {
           errorCount++;
           log += `Error updating association: ${error.message}\n`;
@@ -243,12 +248,17 @@ Deno.serve(async (req) => {
         });
       }
 
-      // Update units one by one
-      for (const { id, data } of unitsToUpdate) {
+      // Update units one by one with delay to avoid rate limits
+      for (let i = 0; i < unitsToUpdate.length; i++) {
+        const { id, data } = unitsToUpdate[i];
         try {
           await base44.asServiceRole.entities.Unit.update(id, data);
           updatedRecords++;
           log += `Updated unit: ${data.unit_number}\n`;
+          // Small delay every 10 updates
+          if ((i + 1) % 10 === 0) {
+            await new Promise(resolve => setTimeout(resolve, 100));
+          }
         } catch (error) {
           errorCount++;
           log += `Error updating unit: ${error.message}\n`;
@@ -309,12 +319,17 @@ Deno.serve(async (req) => {
         });
       }
 
-      // Update owners one by one
-      for (const { id, data, name } of ownersToUpdate) {
+      // Update owners one by one with delay to avoid rate limits
+      for (let i = 0; i < ownersToUpdate.length; i++) {
+        const { id, data, name } = ownersToUpdate[i];
         try {
           await base44.asServiceRole.entities.Owner.update(id, data);
           updatedRecords++;
           log += `Updated owner: ${name}\n`;
+          // Small delay every 10 updates
+          if ((i + 1) % 10 === 0) {
+            await new Promise(resolve => setTimeout(resolve, 100));
+          }
         } catch (error) {
           errorCount++;
           log += `Error updating owner ${name}: ${error.message}\n`;
