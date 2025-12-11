@@ -162,6 +162,9 @@ export default function PropertyManagementImportsAppFolioHomeownerDirectory() {
         Object.entries(columnMapping).filter(([, target]) => target !== 'skip' && target !== '')
       );
 
+      // Log the mappings for debugging
+      console.log('Column Mappings:', filteredColumnMapping);
+      
       // Create import job
       const job = await createJobMutation.mutateAsync({
         type: IMPORT_TYPE,
@@ -173,6 +176,8 @@ export default function PropertyManagementImportsAppFolioHomeownerDirectory() {
         total_rows: csvPreviewData.length,
         column_mappings: filteredColumnMapping
       });
+      
+      console.log('Created job:', job);
 
       // Trigger backend processing
       const processResult = await base44.functions.invoke('processAppFolioImport', {
