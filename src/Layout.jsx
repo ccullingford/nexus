@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from './utils';
 import { 
@@ -14,8 +14,10 @@ import {
   X,
   ChevronRight,
   LogOut,
-  Settings
+  Settings,
+  Search
 } from 'lucide-react';
+import GlobalSearch from './components/GlobalSearch';
 
 const navItems = [
   { name: 'Dashboard', icon: LayoutDashboard, path: 'Dashboard' },
@@ -32,6 +34,19 @@ const navItems = [
 export default function Layout({ children, currentPageName }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [searchOpen, setSearchOpen] = useState(false);
+
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+        e.preventDefault();
+        setSearchOpen(true);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
 
   const user = {
     initials: 'CM',
@@ -156,6 +171,18 @@ export default function Layout({ children, currentPageName }) {
             </div>
           </div>
 
+          {/* Search */}
+          <button
+            onClick={() => setSearchOpen(true)}
+            className="flex items-center gap-2 px-3 py-1.5 bg-[#f8f8fb] hover:bg-[#e3e4ed] rounded-lg transition-colors border border-[#e3e4ed]"
+          >
+            <Search className="w-4 h-4 text-[#5c5f7a]" />
+            <span className="hidden md:inline text-sm text-[#5c5f7a]">Search</span>
+            <kbd className="hidden md:inline px-2 py-0.5 bg-white border border-[#e3e4ed] rounded text-xs text-[#5c5f7a]">
+              {navigator.platform.includes('Mac') ? '⌘K' : 'Ctrl+K'}
+            </kbd>
+          </button>
+
           {/* Right side - User */}
           <div className="flex items-center gap-3">
             <div className="hidden sm:block text-right">
@@ -202,7 +229,10 @@ export default function Layout({ children, currentPageName }) {
         <main className="flex-1 p-4 lg:p-8 overflow-auto">
           {children}
         </main>
-      </div>
-    </div>
-  );
-}
+        </div>
+
+        {/* Global Search Modal */}
+        <GlobalSearch open={searchOpen} onClose={() => setSearchOpen(false)} />
+        </div>
+        );
+        }
