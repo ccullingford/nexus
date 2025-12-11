@@ -166,6 +166,33 @@ export default function GeneralSettings() {
           </CardContent>
         </Card>
 
+        {/* HOA Manager Import */}
+        <Card className="border-0 shadow-sm hover:shadow-md transition-shadow">
+          <CardHeader>
+            <div className="flex items-start justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 rounded-lg bg-orange-100 flex items-center justify-center">
+                  <FileSpreadsheet className="w-6 h-6 text-orange-600" />
+                </div>
+                <div>
+                  <CardTitle className="text-[#414257]">HOA Manager Import</CardTitle>
+                  <CardDescription className="mt-1">
+                    Import data from HOA Manager Pro JSON exports
+                  </CardDescription>
+                </div>
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <Link to={createPageUrl('HoaManagerImport')}>
+              <Button className="w-full bg-[#414257] hover:bg-[#5c5f7a]">
+                Open HOA Manager Import
+                <ArrowRight className="w-4 h-4 ml-2" />
+              </Button>
+            </Link>
+          </CardContent>
+        </Card>
+
         {/* Parking Manager Admin */}
         <Card className="border-0 shadow-sm hover:shadow-md transition-shadow">
           <CardHeader>
