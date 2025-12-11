@@ -42,11 +42,34 @@ Deno.serve(async (req) => {
       const csvResponse = await fetch(job.file_url);
       const csvText = await csvResponse.text();
       
-      // Parse CSV
+      // Parse CSV - properly handle quoted fields
+      const parseCSVLine = (line) => {
+        const result = [];
+        let current = '';
+        let inQuotes = false;
+        
+        for (let i = 0; i < line.length; i++) {
+          const char = line[i];
+          
+          if (char === '"') {
+            inQuotes = !inQuotes;
+          } else if (char === ',' && !inQuotes) {
+            result.push(current.trim());
+            current = '';
+          } else {
+            current += char;
+          }
+        }
+        result.push(current.trim());
+        return result;
+      };
+      
       const lines = csvText.split('\n').filter(line => line.trim());
-      const headers = lines[0].split(',').map(h => h.trim().replace(/"/g, ''));
+      const headers = parseCSVLine(lines[0]).map(h => h.replace(/^"|"$/g, ''));
       
       log += `Found ${lines.length - 1} rows to process\n`;
+      log += `Headers: ${headers.join(', ')}\n`;
+      log += `Column mappings: ${JSON.stringify(columnMappings, null, 2)}\n`;
       
       // Update total rows
       await base44.asServiceRole.entities.ImportJob.update(job.id, {
