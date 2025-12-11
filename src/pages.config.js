@@ -21,6 +21,7 @@ import PropertyManagementImportsAppFolioHomeownerDirectory from './pages/Propert
 import GeneralSettings from './pages/GeneralSettings';
 import ParkingManagerVehicles from './pages/ParkingManagerVehicles';
 import AssociationBook from './pages/AssociationBook';
+import HoaManagerImport from './pages/HoaManagerImport';
 import __Layout from './Layout.jsx';
 
 
@@ -48,6 +49,7 @@ export const PAGES = {
     "GeneralSettings": GeneralSettings,
     "ParkingManagerVehicles": ParkingManagerVehicles,
     "AssociationBook": AssociationBook,
+    "HoaManagerImport": HoaManagerImport,
 }
 
 export const pagesConfig = {
