@@ -432,7 +432,23 @@ export default function PropertyManagementImportsAppFolioHomeownerDirectory() {
             </Button>
           </div>
         </div>
-      )}
-    </div>
-  );
-}
+        )}
+
+        {/* Step 4: Processing */}
+        {step === 'processing' && (
+        <Card className="border-0 shadow-sm">
+          <CardContent className="p-12 text-center">
+            <Loader className="w-16 h-16 text-blue-600 mx-auto mb-4 animate-spin" />
+            <h3 className="text-xl font-semibold text-[#414257] mb-2">Processing Import...</h3>
+            <p className="text-[#5c5f7a]">
+              This may take a few minutes depending on the size of your file.
+            </p>
+            <p className="text-sm text-[#5c5f7a] mt-2">
+              Please don't close this window.
+            </p>
+          </CardContent>
+        </Card>
+        )}
+        </div>
+        );
+        }
