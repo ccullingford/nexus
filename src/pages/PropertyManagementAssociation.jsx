@@ -4,7 +4,7 @@ import { base44 } from '@/api/base44Client';
 import { createPageUrl } from '@/utils';
 import { usePermissions } from '@/components/usePermissions';
 import { PERMISSIONS } from '@/components/permissions';
-import { ArrowLeft, Plus, Edit, Users, Home, Building, FileText, DollarSign, Search } from 'lucide-react';
+import { ArrowLeft, Plus, Edit, Users, Home, Building, FileText, DollarSign, Search, Book } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -157,6 +157,15 @@ export default function PropertyManagementAssociation() {
             </p>
           )}
         </div>
+        {hasPermission(PERMISSIONS.ASSOCIATION_BOOK_VIEW) && (
+          <Button
+            variant="outline"
+            onClick={() => window.location.href = createPageUrl('AssociationBook') + `?associationId=${associationId}`}
+          >
+            <Book className="w-4 h-4 mr-2" />
+            Association Book
+          </Button>
+        )}
       </div>
 
       {/* Tabs */}
