@@ -3,6 +3,8 @@ import { useQuery } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
+import { usePermissions } from '@/components/usePermissions';
+import { PERMISSIONS } from '@/components/permissions';
 import { Search, Plus, FileText } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -47,12 +49,14 @@ export default function InvoiceManagerInvoices() {
           <h1 className="text-2xl font-bold text-[#414257]">All Invoices</h1>
           <p className="text-[#5c5f7a] mt-1">{filteredInvoices.length} total invoices</p>
         </div>
-        <Link to={createPageUrl('InvoiceManagerNew')}>
-          <Button className="bg-[#414257] hover:bg-[#5c5f7a]">
-            <Plus className="w-4 h-4 mr-2" />
-            New Invoice
-          </Button>
-        </Link>
+        {hasPermission(PERMISSIONS.INVOICE_MANAGER_INVOICES_EDIT) && (
+          <Link to={createPageUrl('InvoiceManagerNew')}>
+            <Button className="bg-[#414257] hover:bg-[#5c5f7a]">
+              <Plus className="w-4 h-4 mr-2" />
+              New Invoice
+            </Button>
+          </Link>
+        )}
       </div>
 
       {/* Filters */}
