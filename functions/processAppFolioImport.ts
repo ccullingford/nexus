@@ -156,10 +156,14 @@ Deno.serve(async (req) => {
       const associationIdMap = new Map();
       for (const [key, data] of associationMap) {
         try {
-          // Check if association exists
-          const existing = await base44.asServiceRole.entities.Association.filter({
-            name: data.name
-          });
+          // Normalize the name (trim whitespace, normalize case for comparison)
+          const normalizedName = data.name.trim();
+
+          // Check if association exists (case-insensitive, trimmed)
+          const allAssociations = await base44.asServiceRole.entities.Association.list();
+          const existing = allAssociations.filter(a => 
+            a.name.trim().toLowerCase() === normalizedName.toLowerCase()
+          );
 
           let associationId;
           if (existing.length > 0) {
