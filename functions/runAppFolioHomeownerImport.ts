@@ -223,9 +223,8 @@ Deno.serve(async (req) => {
           updatedRecords++;
           log += `Updated association: ${data.name}\n`;
           
-          if ((i + 1) % 10 === 0) {
-            await new Promise(resolve => setTimeout(resolve, 100));
-          }
+          // Small delay after every update
+          await new Promise(resolve => setTimeout(resolve, 150));
         } catch (error) {
           errorCount++;
           errors.push(`Error updating association ${data.name}: ${error.message}`);
@@ -384,9 +383,8 @@ Deno.serve(async (req) => {
           updatedRecords++;
           log += `Updated owner: ${name}\n`;
           
-          if ((i + 1) % 10 === 0) {
-            await new Promise(resolve => setTimeout(resolve, 100));
-          }
+          // Small delay after every update
+          await new Promise(resolve => setTimeout(resolve, 150));
         } catch (error) {
           errorCount++;
           errors.push(`Error updating owner ${name}: ${error.message}`);
