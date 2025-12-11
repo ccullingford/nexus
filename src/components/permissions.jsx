@@ -1,0 +1,235 @@
+// ============================================
+// NEXUS PERMISSIONS SYSTEM
+// ============================================
+
+// Permission Keys
+export const PERMISSIONS = {
+  // Property Management
+  PROPERTY_MANAGEMENT_ACCESS: 'property-management:access',
+  PROPERTY_MANAGEMENT_OWNERS_VIEW: 'property-management:owners:view',
+  PROPERTY_MANAGEMENT_OWNERS_EDIT: 'property-management:owners:edit',
+  PROPERTY_MANAGEMENT_UNITS_VIEW: 'property-management:units:view',
+  PROPERTY_MANAGEMENT_UNITS_EDIT: 'property-management:units:edit',
+  PROPERTY_MANAGEMENT_ASSOCIATIONS_VIEW: 'property-management:associations:view',
+  PROPERTY_MANAGEMENT_ASSOCIATIONS_EDIT: 'property-management:associations:edit',
+  
+  // Invoice Manager
+  INVOICE_MANAGER_ACCESS: 'invoice-manager:access',
+  INVOICE_MANAGER_INVOICES_VIEW: 'invoice-manager:invoices:view',
+  INVOICE_MANAGER_INVOICES_EDIT: 'invoice-manager:invoices:edit',
+  INVOICE_MANAGER_INVOICES_SEND: 'invoice-manager:invoices:send',
+  INVOICE_MANAGER_CUSTOMERS_VIEW: 'invoice-manager:customers:view',
+  INVOICE_MANAGER_CUSTOMERS_EDIT: 'invoice-manager:customers:edit',
+  
+  // Settings & Admin
+  SETTINGS_ACCESS: 'settings:access',
+  SETTINGS_MANAGE: 'settings:manage',
+  
+  // Imports
+  IMPORTS_RUN: 'imports:run',
+  IMPORTS_VIEW_HISTORY: 'imports:view-history',
+  
+  // Global Search
+  GLOBAL_SEARCH_ACCESS: 'global-search:access',
+  
+  // TODO: Compliance (future)
+  // COMPLIANCE_VEHICLES_VIEW: 'compliance:vehicles:view',
+  // COMPLIANCE_VEHICLES_EDIT: 'compliance:vehicles:edit',
+};
+
+// Role Definitions
+export const ROLES = {
+  SUPER_ADMIN: 'Super Admin',
+  ORG_ADMIN: 'Org Admin',
+  ADMIN: 'admin',
+  USER: 'user',
+  STAFF: 'Staff',
+  VIEWER: 'Viewer',
+};
+
+// Role → Permissions Mapping
+export const ROLE_PERMISSIONS = {
+  [ROLES.SUPER_ADMIN]: [
+    // Full access to everything
+    PERMISSIONS.PROPERTY_MANAGEMENT_ACCESS,
+    PERMISSIONS.PROPERTY_MANAGEMENT_OWNERS_VIEW,
+    PERMISSIONS.PROPERTY_MANAGEMENT_OWNERS_EDIT,
+    PERMISSIONS.PROPERTY_MANAGEMENT_UNITS_VIEW,
+    PERMISSIONS.PROPERTY_MANAGEMENT_UNITS_EDIT,
+    PERMISSIONS.PROPERTY_MANAGEMENT_ASSOCIATIONS_VIEW,
+    PERMISSIONS.PROPERTY_MANAGEMENT_ASSOCIATIONS_EDIT,
+    PERMISSIONS.INVOICE_MANAGER_ACCESS,
+    PERMISSIONS.INVOICE_MANAGER_INVOICES_VIEW,
+    PERMISSIONS.INVOICE_MANAGER_INVOICES_EDIT,
+    PERMISSIONS.INVOICE_MANAGER_INVOICES_SEND,
+    PERMISSIONS.INVOICE_MANAGER_CUSTOMERS_VIEW,
+    PERMISSIONS.INVOICE_MANAGER_CUSTOMERS_EDIT,
+    PERMISSIONS.SETTINGS_ACCESS,
+    PERMISSIONS.SETTINGS_MANAGE,
+    PERMISSIONS.IMPORTS_RUN,
+    PERMISSIONS.IMPORTS_VIEW_HISTORY,
+    PERMISSIONS.GLOBAL_SEARCH_ACCESS,
+  ],
+  
+  [ROLES.ORG_ADMIN]: [
+    // Same as Super Admin for now
+    PERMISSIONS.PROPERTY_MANAGEMENT_ACCESS,
+    PERMISSIONS.PROPERTY_MANAGEMENT_OWNERS_VIEW,
+    PERMISSIONS.PROPERTY_MANAGEMENT_OWNERS_EDIT,
+    PERMISSIONS.PROPERTY_MANAGEMENT_UNITS_VIEW,
+    PERMISSIONS.PROPERTY_MANAGEMENT_UNITS_EDIT,
+    PERMISSIONS.PROPERTY_MANAGEMENT_ASSOCIATIONS_VIEW,
+    PERMISSIONS.PROPERTY_MANAGEMENT_ASSOCIATIONS_EDIT,
+    PERMISSIONS.INVOICE_MANAGER_ACCESS,
+    PERMISSIONS.INVOICE_MANAGER_INVOICES_VIEW,
+    PERMISSIONS.INVOICE_MANAGER_INVOICES_EDIT,
+    PERMISSIONS.INVOICE_MANAGER_INVOICES_SEND,
+    PERMISSIONS.INVOICE_MANAGER_CUSTOMERS_VIEW,
+    PERMISSIONS.INVOICE_MANAGER_CUSTOMERS_EDIT,
+    PERMISSIONS.SETTINGS_ACCESS,
+    PERMISSIONS.SETTINGS_MANAGE,
+    PERMISSIONS.IMPORTS_RUN,
+    PERMISSIONS.IMPORTS_VIEW_HISTORY,
+    PERMISSIONS.GLOBAL_SEARCH_ACCESS,
+  ],
+  
+  [ROLES.ADMIN]: [
+    // Basic admin role
+    PERMISSIONS.PROPERTY_MANAGEMENT_ACCESS,
+    PERMISSIONS.PROPERTY_MANAGEMENT_OWNERS_VIEW,
+    PERMISSIONS.PROPERTY_MANAGEMENT_OWNERS_EDIT,
+    PERMISSIONS.PROPERTY_MANAGEMENT_UNITS_VIEW,
+    PERMISSIONS.PROPERTY_MANAGEMENT_UNITS_EDIT,
+    PERMISSIONS.PROPERTY_MANAGEMENT_ASSOCIATIONS_VIEW,
+    PERMISSIONS.PROPERTY_MANAGEMENT_ASSOCIATIONS_EDIT,
+    PERMISSIONS.INVOICE_MANAGER_ACCESS,
+    PERMISSIONS.INVOICE_MANAGER_INVOICES_VIEW,
+    PERMISSIONS.INVOICE_MANAGER_INVOICES_EDIT,
+    PERMISSIONS.INVOICE_MANAGER_INVOICES_SEND,
+    PERMISSIONS.INVOICE_MANAGER_CUSTOMERS_VIEW,
+    PERMISSIONS.INVOICE_MANAGER_CUSTOMERS_EDIT,
+    PERMISSIONS.IMPORTS_RUN,
+    PERMISSIONS.IMPORTS_VIEW_HISTORY,
+    PERMISSIONS.GLOBAL_SEARCH_ACCESS,
+  ],
+  
+  [ROLES.STAFF]: [
+    // Staff can view and edit most things, but not settings
+    PERMISSIONS.PROPERTY_MANAGEMENT_ACCESS,
+    PERMISSIONS.PROPERTY_MANAGEMENT_OWNERS_VIEW,
+    PERMISSIONS.PROPERTY_MANAGEMENT_OWNERS_EDIT,
+    PERMISSIONS.PROPERTY_MANAGEMENT_UNITS_VIEW,
+    PERMISSIONS.PROPERTY_MANAGEMENT_UNITS_EDIT,
+    PERMISSIONS.PROPERTY_MANAGEMENT_ASSOCIATIONS_VIEW,
+    PERMISSIONS.PROPERTY_MANAGEMENT_ASSOCIATIONS_EDIT,
+    PERMISSIONS.INVOICE_MANAGER_ACCESS,
+    PERMISSIONS.INVOICE_MANAGER_INVOICES_VIEW,
+    PERMISSIONS.INVOICE_MANAGER_INVOICES_EDIT,
+    PERMISSIONS.INVOICE_MANAGER_INVOICES_SEND,
+    PERMISSIONS.INVOICE_MANAGER_CUSTOMERS_VIEW,
+    PERMISSIONS.INVOICE_MANAGER_CUSTOMERS_EDIT,
+    PERMISSIONS.IMPORTS_VIEW_HISTORY,
+    PERMISSIONS.GLOBAL_SEARCH_ACCESS,
+  ],
+  
+  [ROLES.USER]: [
+    // Regular users - view only
+    PERMISSIONS.PROPERTY_MANAGEMENT_ACCESS,
+    PERMISSIONS.PROPERTY_MANAGEMENT_OWNERS_VIEW,
+    PERMISSIONS.PROPERTY_MANAGEMENT_UNITS_VIEW,
+    PERMISSIONS.PROPERTY_MANAGEMENT_ASSOCIATIONS_VIEW,
+    PERMISSIONS.INVOICE_MANAGER_ACCESS,
+    PERMISSIONS.INVOICE_MANAGER_INVOICES_VIEW,
+    PERMISSIONS.INVOICE_MANAGER_CUSTOMERS_VIEW,
+    PERMISSIONS.GLOBAL_SEARCH_ACCESS,
+  ],
+  
+  [ROLES.VIEWER]: [
+    // Viewer - read-only access
+    PERMISSIONS.PROPERTY_MANAGEMENT_ACCESS,
+    PERMISSIONS.PROPERTY_MANAGEMENT_OWNERS_VIEW,
+    PERMISSIONS.PROPERTY_MANAGEMENT_UNITS_VIEW,
+    PERMISSIONS.PROPERTY_MANAGEMENT_ASSOCIATIONS_VIEW,
+    PERMISSIONS.INVOICE_MANAGER_ACCESS,
+    PERMISSIONS.INVOICE_MANAGER_INVOICES_VIEW,
+    PERMISSIONS.INVOICE_MANAGER_CUSTOMERS_VIEW,
+    PERMISSIONS.GLOBAL_SEARCH_ACCESS,
+  ],
+};
+
+// ============================================
+// HELPER FUNCTIONS
+// ============================================
+
+/**
+ * Get all permissions for a given role
+ * @param {string} role - User role
+ * @returns {string[]} - Array of permission keys
+ */
+export function getPermissionsForRole(role) {
+  return ROLE_PERMISSIONS[role] || [];
+}
+
+/**
+ * Check if a role has a specific permission
+ * @param {string} role - User role
+ * @param {string} permission - Permission key to check
+ * @returns {boolean}
+ */
+export function hasPermission(role, permission) {
+  const permissions = getPermissionsForRole(role);
+  return permissions.includes(permission);
+}
+
+/**
+ * Check if a role has ANY of the specified permissions
+ * @param {string} role - User role
+ * @param {string[]} permissions - Array of permission keys
+ * @returns {boolean}
+ */
+export function hasAnyPermission(role, permissions) {
+  return permissions.some(permission => hasPermission(role, permission));
+}
+
+/**
+ * Check if a role has ALL of the specified permissions
+ * @param {string} role - User role
+ * @param {string[]} permissions - Array of permission keys
+ * @returns {boolean}
+ */
+export function hasAllPermissions(role, permissions) {
+  return permissions.every(permission => hasPermission(role, permission));
+}
+
+/**
+ * Check if a user object has a specific permission
+ * @param {Object} user - User object with role property
+ * @param {string} permission - Permission key to check
+ * @returns {boolean}
+ */
+export function userHasPermission(user, permission) {
+  if (!user || !user.role) return false;
+  return hasPermission(user.role, permission);
+}
+
+/**
+ * Check if a user object has ANY of the specified permissions
+ * @param {Object} user - User object with role property
+ * @param {string[]} permissions - Array of permission keys
+ * @returns {boolean}
+ */
+export function userHasAnyPermission(user, permissions) {
+  if (!user || !user.role) return false;
+  return hasAnyPermission(user.role, permissions);
+}
+
+/**
+ * Check if a user object has ALL of the specified permissions
+ * @param {Object} user - User object with role property
+ * @param {string[]} permissions - Array of permission keys
+ * @returns {boolean}
+ */
+export function userHasAllPermissions(user, permissions) {
+  if (!user || !user.role) return false;
+  return hasAllPermissions(user.role, permissions);
+}

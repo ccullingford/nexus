@@ -1,5 +1,5 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.4';
-import { hasPermission } from '../utils/permissions.js';
+import { hasPermission } from '../components/permissions.js';
 
 /**
  * Backend helper to check if the current user has a permission
