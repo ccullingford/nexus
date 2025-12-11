@@ -20,6 +20,7 @@ import PropertyManagementImports from './pages/PropertyManagementImports';
 import PropertyManagementImportsAppFolioHomeownerDirectory from './pages/PropertyManagementImportsAppFolioHomeownerDirectory';
 import GeneralSettings from './pages/GeneralSettings';
 import ParkingManagerVehicles from './pages/ParkingManagerVehicles';
+import AssociationBook from './pages/AssociationBook';
 import __Layout from './Layout.jsx';
 
 
@@ -46,6 +47,7 @@ export const PAGES = {
     "PropertyManagementImportsAppFolioHomeownerDirectory": PropertyManagementImportsAppFolioHomeownerDirectory,
     "GeneralSettings": GeneralSettings,
     "ParkingManagerVehicles": ParkingManagerVehicles,
+    "AssociationBook": AssociationBook,
 }
 
 export const pagesConfig = {
