@@ -73,14 +73,36 @@ export default function PropertyManagementImportsAppFolioHomeownerDirectory() {
       const response = await fetch(file_url);
       const text = await response.text();
       const lines = text.split('\n').filter(line => line.trim());
-      
+
+      // CSV parser that handles quoted fields with commas
+      const parseCSVLine = (line) => {
+        const result = [];
+        let current = '';
+        let inQuotes = false;
+
+        for (let i = 0; i < line.length; i++) {
+          const char = line[i];
+
+          if (char === '"') {
+            inQuotes = !inQuotes;
+          } else if (char === ',' && !inQuotes) {
+            result.push(current.trim());
+            current = '';
+          } else {
+            current += char;
+          }
+        }
+        result.push(current.trim());
+        return result;
+      };
+
       if (lines.length > 0) {
-        const headers = lines[0].split(',').map(h => h.trim().replace(/"/g, ''));
+        const headers = parseCSVLine(lines[0]).map(h => h.replace(/^"|"$/g, ''));
         setCsvColumns(headers);
-        
+
         // Parse first 5 rows for preview
         const previewRows = lines.slice(1, 6).map(line => {
-          const values = line.split(',').map(v => v.trim().replace(/"/g, ''));
+          const values = parseCSVLine(line).map(v => v.replace(/^"|"$/g, ''));
           return headers.reduce((obj, header, index) => {
             obj[header] = values[index] || '';
             return obj;
