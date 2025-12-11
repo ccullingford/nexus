@@ -78,7 +78,7 @@ export default function VehicleFormModal({ open, onClose, vehicle, associations,
     license_plate: '',
     state: '',
     parking_spot: '',
-    vehicle_type: 'car',
+    body_style_id: '',
     status: 'active',
     notes: ''
   });
@@ -156,7 +156,7 @@ export default function VehicleFormModal({ open, onClose, vehicle, associations,
         license_plate: vehicle.license_plate || '',
         state: vehicle.state || '',
         parking_spot: vehicle.parking_spot || '',
-        vehicle_type: vehicle.vehicle_type || 'car',
+        body_style_id: vehicle.body_style_id || '',
         status: vehicle.status || 'active',
         notes: vehicle.notes || ''
       });
@@ -173,7 +173,7 @@ export default function VehicleFormModal({ open, onClose, vehicle, associations,
         license_plate: '',
         state: '',
         parking_spot: '',
-        vehicle_type: 'car',
+        body_style_id: '',
         status: 'active',
         notes: ''
       });
@@ -202,8 +202,16 @@ export default function VehicleFormModal({ open, onClose, vehicle, associations,
   const handleSubmit = (e) => {
     e.preventDefault();
     
+    // Get body style label for denormalization
+    const bodyStyleLabel = formData.body_style_id 
+      ? bodyStyles.find(bs => bs.id === formData.body_style_id)?.name || null
+      : null;
+    
     // Clean up form data - remove empty strings
-    const cleanData = { ...formData };
+    const cleanData = { 
+      ...formData,
+      body_style_label: bodyStyleLabel
+    };
     Object.keys(cleanData).forEach(key => {
       if (cleanData[key] === '') {
         delete cleanData[key];
@@ -601,23 +609,23 @@ export default function VehicleFormModal({ open, onClose, vehicle, associations,
               </Select>
             </div>
 
-            {/* Vehicle Type & Parking */}
+            {/* Body Style & Parking */}
             <div>
-              <Label>Vehicle Type</Label>
+              <Label>Body Style</Label>
               <Select
-                value={formData.vehicle_type}
-                onValueChange={(value) => setFormData({ ...formData, vehicle_type: value })}
+                value={formData.body_style_id}
+                onValueChange={(value) => setFormData({ ...formData, body_style_id: value })}
               >
                 <SelectTrigger>
-                  <SelectValue />
+                  <SelectValue placeholder="Select body style" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="car">Car</SelectItem>
-                  <SelectItem value="truck">Truck</SelectItem>
-                  <SelectItem value="suv">SUV</SelectItem>
-                  <SelectItem value="van">Van</SelectItem>
-                  <SelectItem value="motorcycle">Motorcycle</SelectItem>
-                  <SelectItem value="other">Other</SelectItem>
+                  <SelectItem value={null}>None</SelectItem>
+                  {bodyStyles.map(style => (
+                    <SelectItem key={style.id} value={style.id}>
+                      {style.name}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
