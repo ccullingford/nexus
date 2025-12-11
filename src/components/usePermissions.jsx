@@ -35,12 +35,15 @@ export function usePermissions() {
     };
   }, []);
 
+  // Default to Super Admin if no role is set (for development)
+  const effectiveUser = user ? { ...user, role: user.role || 'Super Admin' } : null;
+
   return {
-    user,
+    user: effectiveUser,
     loading,
-    hasPermission: (permission) => userHasPermission(user, permission),
-    hasAnyPermission: (permissions) => userHasAnyPermission(user, permissions),
-    hasAllPermissions: (permissions) => userHasAllPermissions(user, permissions),
+    hasPermission: (permission) => userHasPermission(effectiveUser, permission),
+    hasAnyPermission: (permissions) => userHasAnyPermission(effectiveUser, permissions),
+    hasAllPermissions: (permissions) => userHasAllPermissions(effectiveUser, permissions),
   };
 }
 
