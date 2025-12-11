@@ -14,18 +14,20 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 const IMPORT_TYPE = 'appfolio_homeowner_directory';
 
 const DEFAULT_MAPPING = {
-  'Association Name': 'association.name',
-  'Association Code': 'association.code',
-  'Property Name': 'unit.unit_number',
+  'Property Name': 'association.name',
   'Unit': 'unit.unit_number',
-  'Owner First Name': 'owner.first_name',
-  'Owner Last Name': 'owner.last_name',
-  'Owner Email': 'owner.email',
-  'Owner Phone': 'owner.phone',
-  'Street Address': 'association.street_address',
-  'City': 'association.city',
-  'State': 'association.state',
-  'Zip': 'association.zip'
+  'First Name': 'owner.first_name',
+  'Last Name': 'owner.last_name',
+  'Emails': 'owner.email',
+  'Phone Numbers': 'owner.phone',
+  'Unit Street Address 1': 'unit.street_address',
+  'Property Street Address 1': 'association.street_address',
+  'Property City': 'association.city',
+  'Property State': 'association.state',
+  'Property Zip': 'association.zip',
+  'Unit City': 'association.city',
+  'Unit State': 'association.state',
+  'Unit Zip': 'association.zip'
 };
 
 export default function PropertyManagementImportsAppFolioHomeownerDirectory() {
