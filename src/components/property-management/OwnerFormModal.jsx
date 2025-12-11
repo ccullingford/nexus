@@ -12,8 +12,12 @@ export default function OwnerFormModal({ open, onClose, associationId, units, pr
   const queryClient = useQueryClient();
   const [formData, setFormData] = useState({
     unit_id: preselectedUnitId || '',
+    is_company: false,
+    company_name: '',
     first_name: '',
     last_name: '',
+    contact_first_name: '',
+    contact_last_name: '',
     email: '',
     phone: '',
     mailing_address: '',
@@ -35,8 +39,12 @@ export default function OwnerFormModal({ open, onClose, associationId, units, pr
   const handleClose = () => {
     setFormData({
       unit_id: preselectedUnitId || '',
+      is_company: false,
+      company_name: '',
       first_name: '',
       last_name: '',
+      contact_first_name: '',
+      contact_last_name: '',
       email: '',
       phone: '',
       mailing_address: '',
@@ -51,20 +59,30 @@ export default function OwnerFormModal({ open, onClose, associationId, units, pr
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    createMutation.mutate({
+    const payload = {
       association_id: associationId,
       unit_id: formData.unit_id,
-      first_name: formData.first_name,
-      last_name: formData.last_name,
+      is_company: formData.is_company,
+      is_primary_owner: formData.is_primary_owner,
       email: formData.email || undefined,
       phone: formData.phone || undefined,
       mailing_address: formData.mailing_address || undefined,
       mailing_city: formData.mailing_city || undefined,
       mailing_state: formData.mailing_state || undefined,
       mailing_zip: formData.mailing_zip || undefined,
-      is_primary_owner: formData.is_primary_owner,
       notes: formData.notes || undefined
-    });
+    };
+    
+    if (formData.is_company) {
+      payload.company_name = formData.company_name;
+      payload.contact_first_name = formData.contact_first_name || undefined;
+      payload.contact_last_name = formData.contact_last_name || undefined;
+    } else {
+      payload.first_name = formData.first_name;
+      payload.last_name = formData.last_name;
+    }
+    
+    createMutation.mutate(payload);
   };
 
   return (
@@ -96,24 +114,66 @@ export default function OwnerFormModal({ open, onClose, associationId, units, pr
             </Select>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <Label>First Name *</Label>
-              <Input
-                value={formData.first_name}
-                onChange={(e) => setFormData({ ...formData, first_name: e.target.value })}
-                required
-              />
-            </div>
-            <div>
-              <Label>Last Name *</Label>
-              <Input
-                value={formData.last_name}
-                onChange={(e) => setFormData({ ...formData, last_name: e.target.value })}
-                required
-              />
-            </div>
+          <div className="flex items-center gap-2 p-3 bg-blue-50 rounded-lg border border-blue-200">
+            <input
+              type="checkbox"
+              checked={formData.is_company}
+              onChange={(e) => setFormData({ ...formData, is_company: e.target.checked })}
+              className="w-4 h-4"
+            />
+            <Label className="cursor-pointer text-blue-900">Owner is a company/organization</Label>
           </div>
+
+          {formData.is_company ? (
+            <>
+              <div>
+                <Label>Company Name *</Label>
+                <Input
+                  value={formData.company_name}
+                  onChange={(e) => setFormData({ ...formData, company_name: e.target.value })}
+                  placeholder="e.g. ABC Holdings LLC"
+                  required
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label>Contact First Name</Label>
+                  <Input
+                    value={formData.contact_first_name}
+                    onChange={(e) => setFormData({ ...formData, contact_first_name: e.target.value })}
+                    placeholder="Optional"
+                  />
+                </div>
+                <div>
+                  <Label>Contact Last Name</Label>
+                  <Input
+                    value={formData.contact_last_name}
+                    onChange={(e) => setFormData({ ...formData, contact_last_name: e.target.value })}
+                    placeholder="Optional"
+                  />
+                </div>
+              </div>
+            </>
+          ) : (
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label>First Name *</Label>
+                <Input
+                  value={formData.first_name}
+                  onChange={(e) => setFormData({ ...formData, first_name: e.target.value })}
+                  required
+                />
+              </div>
+              <div>
+                <Label>Last Name *</Label>
+                <Input
+                  value={formData.last_name}
+                  onChange={(e) => setFormData({ ...formData, last_name: e.target.value })}
+                  required
+                />
+              </div>
+            </div>
+          )}
 
           <div className="grid grid-cols-2 gap-4">
             <div>

@@ -135,15 +135,26 @@ export default function PropertyManagementUnit() {
               {owners.map((owner) => (
                 <div key={owner.id} className="p-4 bg-[#e3e4ed] rounded-lg">
                   <div className="flex items-start justify-between">
-                    <div>
-                      <div className="flex items-center gap-2">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 flex-wrap">
                         <p className="font-semibold text-[#414257]">
-                          {owner.first_name} {owner.last_name}
+                          {owner.is_company 
+                            ? owner.company_name 
+                            : `${owner.first_name || ''} ${owner.last_name || ''}`.trim() || '—'
+                          }
                         </p>
+                        {owner.is_company && (
+                          <Badge variant="outline" className="text-xs">Company</Badge>
+                        )}
                         {owner.is_primary_owner && (
                           <Badge className="bg-blue-100 text-blue-800 border-blue-200">Primary</Badge>
                         )}
                       </div>
+                      {owner.is_company && (owner.contact_first_name || owner.contact_last_name) && (
+                        <p className="text-sm text-[#5c5f7a] mt-1">
+                          Contact: {owner.contact_first_name} {owner.contact_last_name}
+                        </p>
+                      )}
                       <div className="mt-2 space-y-1 text-sm text-[#5c5f7a]">
                         {owner.email && <p>Email: {owner.email}</p>}
                         {owner.phone && <p>Phone: {owner.phone}</p>}

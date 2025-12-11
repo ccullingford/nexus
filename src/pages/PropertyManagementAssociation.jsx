@@ -74,7 +74,11 @@ export default function PropertyManagementAssociation() {
 
   const getOwnerForUnit = (unitId) => {
     const owner = owners.find(o => o.unit_id === unitId && o.is_primary_owner);
-    return owner ? `${owner.first_name} ${owner.last_name}` : '—';
+    if (!owner) return '—';
+    if (owner.is_company) {
+      return owner.company_name || '—';
+    }
+    return `${owner.first_name || ''} ${owner.last_name || ''}`.trim() || '—';
   };
 
   const getTenantForUnit = (unitId) => {
@@ -232,16 +236,33 @@ export default function PropertyManagementAssociation() {
                     <TableBody>
                       {owners.map((owner) => (
                         <TableRow key={owner.id}>
-                          <TableCell className="font-medium">
-                            {owner.first_name} {owner.last_name}
+                          <TableCell>
+                            <div>
+                              <p className="font-medium">
+                                {owner.is_company 
+                                  ? owner.company_name 
+                                  : `${owner.first_name || ''} ${owner.last_name || ''}`.trim() || '—'
+                                }
+                              </p>
+                              {owner.is_company && (owner.contact_first_name || owner.contact_last_name) && (
+                                <p className="text-xs text-[#5c5f7a] mt-0.5">
+                                  Contact: {owner.contact_first_name} {owner.contact_last_name}
+                                </p>
+                              )}
+                            </div>
                           </TableCell>
                           <TableCell>{getUnitNumber(owner.unit_id)}</TableCell>
                           <TableCell className="text-[#5c5f7a]">{owner.email || '—'}</TableCell>
                           <TableCell className="text-[#5c5f7a]">{owner.phone || '—'}</TableCell>
                           <TableCell>
-                            {owner.is_primary_owner && (
-                              <Badge className="bg-blue-100 text-blue-800 border-blue-200">Primary</Badge>
-                            )}
+                            <div className="flex gap-1">
+                              {owner.is_company && (
+                                <Badge variant="outline" className="text-xs">Company</Badge>
+                              )}
+                              {owner.is_primary_owner && (
+                                <Badge className="bg-blue-100 text-blue-800 border-blue-200">Primary</Badge>
+                              )}
+                            </div>
                           </TableCell>
                         </TableRow>
                       ))}
