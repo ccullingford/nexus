@@ -1,4 +1,6 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.4';
+import { requirePermission } from './checkPermission.js';
+import { PERMISSIONS } from '../utils/permissions.js';
 
 Deno.serve(async (req) => {
   try {

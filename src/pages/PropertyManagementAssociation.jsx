@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import { createPageUrl } from '@/utils';
+import { usePermissions } from '@/utils/usePermissions';
+import { PERMISSIONS } from '@/utils/permissions';
 import { ArrowLeft, Plus, Edit, Users, Home, Building, FileText, DollarSign, Search } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -22,6 +24,7 @@ const statusColors = {
 
 export default function PropertyManagementAssociation() {
   const queryClient = useQueryClient();
+  const { hasPermission } = usePermissions();
   const params = new URLSearchParams(window.location.search);
   const associationId = params.get('id');
 
@@ -179,14 +182,16 @@ export default function PropertyManagementAssociation() {
             <CardHeader>
               <div className="flex items-center justify-between">
                 <CardTitle className="text-[#414257]">Units</CardTitle>
-                <Button
-                  onClick={() => setShowUnitModal(true)}
-                  className="bg-[#414257] hover:bg-[#5c5f7a]"
-                  size="sm"
-                >
-                  <Plus className="w-4 h-4 mr-2" />
-                  Add Unit
-                </Button>
+                {hasPermission(PERMISSIONS.PROPERTY_MANAGEMENT_UNITS_EDIT) && (
+                  <Button
+                    onClick={() => setShowUnitModal(true)}
+                    className="bg-[#414257] hover:bg-[#5c5f7a]"
+                    size="sm"
+                  >
+                    <Plus className="w-4 h-4 mr-2" />
+                    Add Unit
+                  </Button>
+                )}
               </div>
             </CardHeader>
             <CardContent>
@@ -237,14 +242,16 @@ export default function PropertyManagementAssociation() {
             <CardHeader>
               <div className="flex items-center justify-between">
                 <CardTitle className="text-[#414257]">Owners</CardTitle>
-                <Button
-                  onClick={() => setShowOwnerModal(true)}
-                  className="bg-[#414257] hover:bg-[#5c5f7a]"
-                  size="sm"
-                >
-                  <Plus className="w-4 h-4 mr-2" />
-                  Add Owner
-                </Button>
+                {hasPermission(PERMISSIONS.PROPERTY_MANAGEMENT_OWNERS_EDIT) && (
+                  <Button
+                    onClick={() => setShowOwnerModal(true)}
+                    className="bg-[#414257] hover:bg-[#5c5f7a]"
+                    size="sm"
+                  >
+                    <Plus className="w-4 h-4 mr-2" />
+                    Add Owner
+                  </Button>
+                )}
               </div>
             </CardHeader>
             <CardContent>
@@ -327,14 +334,16 @@ export default function PropertyManagementAssociation() {
             <CardHeader>
               <div className="flex items-center justify-between">
                 <CardTitle className="text-[#414257]">Tenants</CardTitle>
-                <Button
-                  onClick={() => setShowTenantModal(true)}
-                  className="bg-[#414257] hover:bg-[#5c5f7a]"
-                  size="sm"
-                >
-                  <Plus className="w-4 h-4 mr-2" />
-                  Add Tenant
-                </Button>
+                {hasPermission(PERMISSIONS.PROPERTY_MANAGEMENT_UNITS_EDIT) && (
+                  <Button
+                    onClick={() => setShowTenantModal(true)}
+                    className="bg-[#414257] hover:bg-[#5c5f7a]"
+                    size="sm"
+                  >
+                    <Plus className="w-4 h-4 mr-2" />
+                    Add Tenant
+                  </Button>
+                )}
               </div>
             </CardHeader>
             <CardContent>

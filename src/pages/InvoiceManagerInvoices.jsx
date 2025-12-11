@@ -20,6 +20,7 @@ const statusColors = {
 };
 
 export default function InvoiceManagerInvoices() {
+  const { hasPermission } = usePermissions();
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
 

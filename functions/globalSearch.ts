@@ -1,13 +1,13 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.4';
+import { requirePermission } from './checkPermission.js';
+import { PERMISSIONS } from '../utils/permissions.js';
 
 Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
     
-    const user = await base44.auth.me();
-    if (!user) {
-      return Response.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+    // Check permissions
+    await requirePermission(req, PERMISSIONS.GLOBAL_SEARCH_ACCESS);
 
     const { query } = await req.json();
     

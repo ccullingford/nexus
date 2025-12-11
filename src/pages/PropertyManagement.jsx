@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import { createPageUrl } from '@/utils';
+import { usePermissions } from '@/utils/usePermissions';
+import { PERMISSIONS } from '@/utils/permissions';
 import { Building2, Plus, Edit, MapPin, Search } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -19,6 +21,7 @@ const statusColors = {
 
 export default function PropertyManagement() {
   const queryClient = useQueryClient();
+  const { hasPermission } = usePermissions();
   const [showModal, setShowModal] = useState(false);
   const [editingAssociation, setEditingAssociation] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
@@ -121,19 +124,23 @@ export default function PropertyManagement() {
           <p className="text-[#5c5f7a] mt-1">Manage associations, units, owners, and tenants</p>
         </div>
         <div className="flex gap-2">
-          <Button
-            variant="outline"
-            onClick={() => window.location.href = createPageUrl('PropertyManagementImports')}
-          >
-            Import Data
-          </Button>
-          <Button
-            onClick={() => handleOpenModal()}
-            className="bg-[#414257] hover:bg-[#5c5f7a]"
-          >
-            <Plus className="w-4 h-4 mr-2" />
-            New Association
-          </Button>
+          {hasPermission(PERMISSIONS.IMPORTS_VIEW_HISTORY) && (
+            <Button
+              variant="outline"
+              onClick={() => window.location.href = createPageUrl('PropertyManagementImports')}
+            >
+              Import Data
+            </Button>
+          )}
+          {hasPermission(PERMISSIONS.PROPERTY_MANAGEMENT_ASSOCIATIONS_EDIT) && (
+            <Button
+              onClick={() => handleOpenModal()}
+              className="bg-[#414257] hover:bg-[#5c5f7a]"
+            >
+              <Plus className="w-4 h-4 mr-2" />
+              New Association
+            </Button>
+          )}
         </div>
       </div>
 
@@ -228,16 +235,18 @@ export default function PropertyManagement() {
                         </Badge>
                       </TableCell>
                       <TableCell className="text-right">
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleOpenModal(association);
-                          }}
-                        >
-                          <Edit className="w-4 h-4" />
-                        </Button>
+                        {hasPermission(PERMISSIONS.PROPERTY_MANAGEMENT_ASSOCIATIONS_EDIT) && (
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleOpenModal(association);
+                            }}
+                          >
+                            <Edit className="w-4 h-4" />
+                          </Button>
+                        )}
                       </TableCell>
                     </TableRow>
                   ))}
