@@ -19,6 +19,7 @@ import PropertyManagementUnit from './pages/PropertyManagementUnit';
 import PropertyManagementImports from './pages/PropertyManagementImports';
 import PropertyManagementImportsAppFolioHomeownerDirectory from './pages/PropertyManagementImportsAppFolioHomeownerDirectory';
 import GeneralSettings from './pages/GeneralSettings';
+import ComplianceVehicles from './pages/ComplianceVehicles';
 import __Layout from './Layout.jsx';
 
 
@@ -44,6 +45,7 @@ export const PAGES = {
     "PropertyManagementImports": PropertyManagementImports,
     "PropertyManagementImportsAppFolioHomeownerDirectory": PropertyManagementImportsAppFolioHomeownerDirectory,
     "GeneralSettings": GeneralSettings,
+    "ComplianceVehicles": ComplianceVehicles,
 }
 
 export const pagesConfig = {
