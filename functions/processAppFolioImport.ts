@@ -85,12 +85,14 @@ Deno.serve(async (req) => {
 
       // Process each row
       for (let i = 1; i < lines.length; i++) {
-        const values = lines[i].split(',').map(v => v.trim().replace(/"/g, ''));
+        const values = parseCSVLine(lines[i]).map(v => v.replace(/^"|"$/g, ''));
         const rowData = {};
         
         headers.forEach((header, index) => {
           rowData[header] = values[index] || '';
         });
+
+        log += `\nRow ${i}: ${JSON.stringify(rowData)}\n`;
 
         // Extract mapped data
         const associationData = {};
@@ -112,6 +114,10 @@ Deno.serve(async (req) => {
             ownerData[field] = value;
           }
         });
+
+        log += `Association data: ${JSON.stringify(associationData)}\n`;
+        log += `Unit data: ${JSON.stringify(unitData)}\n`;
+        log += `Owner data: ${JSON.stringify(ownerData)}\n`;
 
         // Create unique key for association
         const assocKey = associationData.name || associationData.code;
