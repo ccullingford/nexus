@@ -2,13 +2,17 @@ import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
 import { base44 } from '@/api/base44Client';
-import { Settings, FileSpreadsheet, Shield, ArrowRight, AlertCircle } from 'lucide-react';
+import { Settings, FileSpreadsheet, Shield, ArrowRight, AlertCircle, Car, RefreshCw } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { format } from 'date-fns';
 
 export default function GeneralSettings() {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [syncStatus, setSyncStatus] = useState(null);
+  const [syncingMakes, setSyncingMakes] = useState(false);
 
   useEffect(() => {
     const loadUser = async () => {
@@ -23,6 +27,42 @@ export default function GeneralSettings() {
     };
     loadUser();
   }, []);
+
+  useEffect(() => {
+    const loadSyncStatus = async () => {
+      try {
+        const response = await base44.functions.invoke('getParkingSyncStatus');
+        if (response.data.success) {
+          setSyncStatus(response.data);
+        }
+      } catch (error) {
+        console.error('Error loading sync status:', error);
+      }
+    };
+    loadSyncStatus();
+  }, []);
+
+  const handleSyncMakes = async () => {
+    setSyncingMakes(true);
+    try {
+      const response = await base44.functions.invoke('syncVehicleMakesFromNhtsa');
+      if (response.data.success) {
+        alert(`Sync completed! Created: ${response.data.created}, Updated: ${response.data.updated}`);
+        // Reload sync status
+        const statusResponse = await base44.functions.invoke('getParkingSyncStatus');
+        if (statusResponse.data.success) {
+          setSyncStatus(statusResponse.data);
+        }
+      } else {
+        alert('Sync failed: ' + response.data.error);
+      }
+    } catch (error) {
+      console.error('Error syncing makes:', error);
+      alert('Sync failed: ' + error.message);
+    } finally {
+      setSyncingMakes(false);
+    }
+  };
 
   if (loading) {
     return (
@@ -121,6 +161,88 @@ export default function GeneralSettings() {
                 <ArrowRight className="w-4 h-4 ml-2" />
               </Button>
             </Link>
+          </CardContent>
+        </Card>
+
+        {/* Parking Manager Admin */}
+        <Card className="border-0 shadow-sm hover:shadow-md transition-shadow">
+          <CardHeader>
+            <div className="flex items-start justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 rounded-lg bg-green-100 flex items-center justify-center">
+                  <Car className="w-6 h-6 text-green-600" />
+                </div>
+                <div>
+                  <CardTitle className="text-[#414257]">Parking Manager</CardTitle>
+                  <CardDescription className="mt-1">
+                    Sync vehicle makes and models from NHTSA database
+                  </CardDescription>
+                </div>
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {syncStatus && (
+              <div className="space-y-3">
+                {/* Makes Status */}
+                <div className="p-3 bg-[#f8f8fb] rounded-lg">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-sm font-medium text-[#414257]">Vehicle Makes</span>
+                    <Badge variant="secondary" className="bg-blue-100 text-blue-800">
+                      {syncStatus.makes.count} total
+                    </Badge>
+                  </div>
+                  {syncStatus.makes.lastSync ? (
+                    <div className="text-xs text-[#5c5f7a]">
+                      Last synced: {format(new Date(syncStatus.makes.lastSync), 'MMM d, yyyy h:mm a')}
+                    </div>
+                  ) : (
+                    <div className="text-xs text-[#5c5f7a]">Never synced</div>
+                  )}
+                  {syncStatus.makes.status === 'error' && (
+                    <div className="text-xs text-red-600 mt-1">Error: {syncStatus.makes.error}</div>
+                  )}
+                </div>
+
+                {/* Models Status */}
+                <div className="p-3 bg-[#f8f8fb] rounded-lg">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-sm font-medium text-[#414257]">Vehicle Models</span>
+                    <Badge variant="secondary" className="bg-purple-100 text-purple-800">
+                      {syncStatus.models.count} total
+                    </Badge>
+                  </div>
+                  {syncStatus.models.lastSync ? (
+                    <div className="text-xs text-[#5c5f7a]">
+                      Last synced: {format(new Date(syncStatus.models.lastSync), 'MMM d, yyyy h:mm a')}
+                    </div>
+                  ) : (
+                    <div className="text-xs text-[#5c5f7a]">Never synced</div>
+                  )}
+                  {syncStatus.models.status === 'error' && (
+                    <div className="text-xs text-red-600 mt-1">Error: {syncStatus.models.error}</div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            <Button 
+              onClick={handleSyncMakes}
+              disabled={syncingMakes}
+              className="w-full bg-[#414257] hover:bg-[#5c5f7a]"
+            >
+              {syncingMakes ? (
+                <>
+                  <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+                  Syncing Makes...
+                </>
+              ) : (
+                <>
+                  <RefreshCw className="w-4 h-4 mr-2" />
+                  Sync Makes from NHTSA
+                </>
+              )}
+            </Button>
           </CardContent>
         </Card>
       </div>
