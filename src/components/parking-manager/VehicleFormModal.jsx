@@ -90,10 +90,14 @@ export default function VehicleFormModal({ open, onClose, vehicle, associations,
   const [showNewModel, setShowNewModel] = useState(false);
   const [showNewColor, setShowNewColor] = useState(false);
 
-  // Fetch lookups
+  // Fetch lookups - only popular makes for dropdown
   const { data: makes = [] } = useQuery({
     queryKey: ['vehicleMakes'],
-    queryFn: () => base44.entities.VehicleMake.list('name', 500)
+    queryFn: async () => {
+      const allMakes = await base44.entities.VehicleMake.list('name', 500);
+      // Filter to only common/popular makes, plus add "Other" option
+      return allMakes.filter(m => m.is_common);
+    }
   });
 
   const { data: allModels = [] } = useQuery({
@@ -372,7 +376,7 @@ export default function VehicleFormModal({ open, onClose, vehicle, associations,
                   <Input
                     value={newMake}
                     onChange={(e) => setNewMake(e.target.value)}
-                    placeholder="Enter new make"
+                    placeholder="Enter make (e.g., Toyota, Honda)"
                     autoFocus
                   />
                   <Button
@@ -402,7 +406,12 @@ export default function VehicleFormModal({ open, onClose, vehicle, associations,
                   <Select
                     value={formData.make_id}
                     onValueChange={(value) => {
-                      setFormData({ ...formData, make_id: value, model_id: '' });
+                      if (value === 'other') {
+                        setFormData({ ...formData, make_id: '', model_id: '' });
+                        setShowNewMake(true);
+                      } else {
+                        setFormData({ ...formData, make_id: value, model_id: '' });
+                      }
                     }}
                     required
                   >
@@ -415,16 +424,11 @@ export default function VehicleFormModal({ open, onClose, vehicle, associations,
                           {make.name}
                         </SelectItem>
                       ))}
+                      <SelectItem value="other" className="text-[#5c5f7a] font-medium">
+                        Other (enter manually)
+                      </SelectItem>
                     </SelectContent>
                   </Select>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="icon"
-                    onClick={() => setShowNewMake(true)}
-                  >
-                    <Plus className="w-4 h-4" />
-                  </Button>
                 </div>
               )}
             </div>
