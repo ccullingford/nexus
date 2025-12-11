@@ -14,6 +14,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import UnitFormModal from '@/components/property-management/UnitFormModal';
 import OwnerFormModal from '@/components/property-management/OwnerFormModal';
 import TenantFormModal from '@/components/property-management/TenantFormModal';
+import AssociationBookTab from '@/components/association-book/AssociationBookTab';
 
 const statusColors = {
   active: 'bg-green-100 text-green-800 border-green-200',
@@ -157,15 +158,6 @@ export default function PropertyManagementAssociation() {
             </p>
           )}
         </div>
-        {hasPermission(PERMISSIONS.ASSOCIATION_BOOK_VIEW) && (
-          <Button
-            variant="outline"
-            onClick={() => window.location.href = createPageUrl('AssociationBook') + `?associationId=${associationId}`}
-          >
-            <Book className="w-4 h-4 mr-2" />
-            Association Book
-          </Button>
-        )}
       </div>
 
       {/* Tabs */}
@@ -183,6 +175,12 @@ export default function PropertyManagementAssociation() {
           <FileText className="w-4 h-4" />
           Billing
         </TabsTrigger>
+        {hasPermission(PERMISSIONS.ASSOCIATION_BOOK_VIEW) && (
+          <TabsTrigger value="book" className="flex items-center gap-2">
+            <Book className="w-4 h-4" />
+            Association Book
+          </TabsTrigger>
+        )}
       </TabsList>
 
         {/* Units Tab */}
@@ -541,6 +539,13 @@ export default function PropertyManagementAssociation() {
             </CardContent>
           </Card>
         </TabsContent>
+
+        {/* Association Book Tab */}
+        {hasPermission(PERMISSIONS.ASSOCIATION_BOOK_VIEW) && (
+          <TabsContent value="book">
+            <AssociationBookTab associationId={associationId} />
+          </TabsContent>
+        )}
       </Tabs>
 
       {/* Modals */}
