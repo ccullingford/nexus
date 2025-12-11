@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import { createPageUrl } from '@/utils';
@@ -31,6 +32,7 @@ const DEFAULT_MAPPING = {
 };
 
 export default function PropertyManagementImportsAppFolioHomeownerDirectory() {
+  const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [step, setStep] = useState('upload'); // upload, map, review, processing
   const [file, setFile] = useState(null);
@@ -193,8 +195,8 @@ export default function PropertyManagementImportsAppFolioHomeownerDirectory() {
       } else {
         alert('Import failed: ' + processResult.data.error);
       }
-      
-      window.location.href = createPageUrl('PropertyManagementImports');
+
+      navigate(createPageUrl('PropertyManagementImports'));
     } catch (error) {
       console.error('Error running import:', error);
       alert('Failed to run import: ' + error.message);
