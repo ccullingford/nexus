@@ -111,9 +111,35 @@ Deno.serve(async (req) => {
 
     console.log('Sync completed:', result);
 
+    // Save sync status
+    await base44.asServiceRole.entities.ParkingSyncStatus.create({
+      sync_type: 'makes',
+      last_synced_at: new Date().toISOString(),
+      total_records: nhtsMakes.length,
+      created_count: created,
+      updated_count: updated,
+      status: 'success'
+    });
+
     return Response.json(result);
   } catch (error) {
     console.error('Error syncing vehicle makes:', error);
+    
+    // Save error status
+    try {
+      await base44.asServiceRole.entities.ParkingSyncStatus.create({
+        sync_type: 'makes',
+        last_synced_at: new Date().toISOString(),
+        total_records: 0,
+        created_count: 0,
+        updated_count: 0,
+        status: 'error',
+        error_message: error.message
+      });
+    } catch (statusError) {
+      console.error('Failed to save error status:', statusError);
+    }
+    
     return Response.json({ 
       success: false,
       error: error.message 
