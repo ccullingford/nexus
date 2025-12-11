@@ -115,6 +115,41 @@ Deno.serve(async (req) => {
           }
         });
 
+        // Company detection logic
+        const homeownerFull = ownerData.homeowner_full || '';
+        const firstName = ownerData.first_name || '';
+        const lastName = ownerData.last_name || '';
+
+        // Construct expected person format: "Last, First"
+        const expectedPersonFormat = lastName && firstName 
+          ? `${lastName}, ${firstName}`.trim().toLowerCase()
+          : '';
+
+        // Determine if this is a company
+        const isCompany = (!firstName && !lastName) || 
+                          (homeownerFull && expectedPersonFormat && 
+                           homeownerFull.trim().toLowerCase() !== expectedPersonFormat);
+
+        // Set owner fields based on company vs person
+        if (isCompany) {
+          ownerData.is_company = true;
+          ownerData.company_name = homeownerFull;
+          ownerData.contact_first_name = firstName || null;
+          ownerData.contact_last_name = lastName || null;
+          ownerData.original_homeowner_string = homeownerFull;
+          // Clear person fields
+          delete ownerData.first_name;
+          delete ownerData.last_name;
+        } else {
+          ownerData.is_company = false;
+          ownerData.company_name = null;
+          ownerData.original_homeowner_string = homeownerFull;
+          // first_name and last_name already set
+        }
+
+        // Remove the virtual field
+        delete ownerData.homeowner_full;
+
         log += `Association data: ${JSON.stringify(associationData)}\n`;
         log += `Unit data: ${JSON.stringify(unitData)}\n`;
         log += `Owner data: ${JSON.stringify(ownerData)}\n`;
@@ -136,8 +171,8 @@ Deno.serve(async (req) => {
           }
         }
 
-        // Include owner if there's a company name OR first/last name
-        if (ownerData.company_name || ownerData.first_name || ownerData.last_name) {
+        // Include owner if it's valid (company or person)
+        if (ownerData.is_company || ownerData.first_name || ownerData.last_name) {
           ownerList.push({
             associationKey: assocKey,
             unitNumber: unitData.unit_number,
@@ -274,7 +309,9 @@ Deno.serve(async (req) => {
         const unitKey = `${associationKey}_${unitNumber}`;
         const unitId = unitIdMap.get(unitKey);
 
-        const ownerName = ownerData.company_name || `${ownerData.first_name || ''} ${ownerData.last_name || ''}`.trim() || 'Unknown';
+        const ownerName = ownerData.is_company 
+          ? ownerData.company_name 
+          : `${ownerData.first_name || ''} ${ownerData.last_name || ''}`.trim() || 'Unknown';
 
         if (!associationId || !unitId) {
           log += `Skipping owner ${ownerName} - missing association or unit\n`;
@@ -283,16 +320,18 @@ Deno.serve(async (req) => {
 
         // Check if owner exists - match by company name OR first/last name
         let existing = null;
-        if (ownerData.company_name) {
+        if (ownerData.is_company && ownerData.company_name) {
           existing = allOwners.find(o => 
             o.association_id === associationId &&
             o.unit_id === unitId &&
+            o.is_company === true &&
             o.company_name === ownerData.company_name
           );
-        } else if (ownerData.first_name && ownerData.last_name) {
+        } else if (!ownerData.is_company && ownerData.first_name && ownerData.last_name) {
           existing = allOwners.find(o => 
             o.association_id === associationId &&
             o.unit_id === unitId &&
+            (!o.is_company || o.is_company === false) &&
             o.first_name === ownerData.first_name &&
             o.last_name === ownerData.last_name
           );
