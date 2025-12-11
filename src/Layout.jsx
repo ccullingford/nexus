@@ -15,14 +15,15 @@ import {
   ChevronRight,
   LogOut,
   Settings,
-  Search
+  Search,
+  Car
 } from 'lucide-react';
 import GlobalSearch from './components/GlobalSearch';
 
 const navItems = [
   { name: 'Dashboard', icon: LayoutDashboard, path: 'Dashboard' },
   { name: 'Property Management', icon: Building2, path: 'PropertyManagement' },
-  { name: 'Compliance', icon: ClipboardList, path: 'ComplianceVehicles' },
+  { name: 'Parking Manager', icon: Car, path: 'ParkingManagerVehicles' },
   { name: 'Invoice Manager', icon: FileText, path: 'InvoiceManager' },
   { name: 'HOA Manager', icon: Building2, path: 'HOAManager' },
   { name: 'Resident Forms', icon: ClipboardList, path: 'ResidentForms' },

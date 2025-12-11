@@ -248,9 +248,9 @@ export default function PropertyManagementUnit() {
         <CardHeader>
           <div className="flex items-center justify-between">
             <CardTitle className="text-[#414257]">Vehicles</CardTitle>
-            {hasPermission(PERMISSIONS.COMPLIANCE_VEHICLES_EDIT) && (
+            {hasPermission(PERMISSIONS.PARKING_MANAGER_VEHICLES_EDIT) && (
               <Button
-                onClick={() => window.location.href = createPageUrl('ComplianceVehicles')}
+                onClick={() => window.location.href = createPageUrl('ParkingManagerVehicles')}
                 variant="outline"
                 size="sm"
               >
@@ -285,11 +285,11 @@ export default function PropertyManagementUnit() {
                         </div>
                       </div>
                     </div>
-                    {hasPermission(PERMISSIONS.COMPLIANCE_VEHICLES_EDIT) && (
+                    {hasPermission(PERMISSIONS.PARKING_MANAGER_VEHICLES_EDIT) && (
                       <Button
                         variant="ghost"
                         size="icon"
-                        onClick={() => window.location.href = createPageUrl('ComplianceVehicles')}
+                        onClick={() => window.location.href = createPageUrl('ParkingManagerVehicles')}
                       >
                         <Edit className="w-4 h-4" />
                       </Button>
