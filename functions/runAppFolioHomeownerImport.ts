@@ -193,7 +193,7 @@ Deno.serve(async (req) => {
       }
 
       // Bulk create associations in batches
-      const BATCH_SIZE = 50;
+      const BATCH_SIZE = 20;
       for (let i = 0; i < associationsToCreate.length; i += BATCH_SIZE) {
         const batch = associationsToCreate.slice(i, i + BATCH_SIZE);
         try {
@@ -211,9 +211,8 @@ Deno.serve(async (req) => {
           log += `Error creating associations batch: ${error.message}\n`;
         }
         
-        if (i + BATCH_SIZE < associationsToCreate.length) {
-          await new Promise(resolve => setTimeout(resolve, 200));
-        }
+        // Always add delay after each batch
+        await new Promise(resolve => setTimeout(resolve, 300));
       }
 
       // Update associations with delay
@@ -233,6 +232,10 @@ Deno.serve(async (req) => {
           log += `Error updating association: ${error.message}\n`;
         }
       }
+
+      // Delay before starting units
+      log += 'Waiting before processing units...\n';
+      await new Promise(resolve => setTimeout(resolve, 500));
 
       // Create/update units
       const unitIdMap = new Map();
@@ -280,9 +283,8 @@ Deno.serve(async (req) => {
           log += `Error creating units batch: ${error.message}\n`;
         }
         
-        if (i + BATCH_SIZE < unitsToCreate.length) {
-          await new Promise(resolve => setTimeout(resolve, 200));
-        }
+        // Always add delay after each batch
+        await new Promise(resolve => setTimeout(resolve, 300));
       }
 
       // Update units
@@ -293,15 +295,18 @@ Deno.serve(async (req) => {
           updatedRecords++;
           log += `Updated unit: ${data.unit_number}\n`;
           
-          if ((i + 1) % 10 === 0) {
-            await new Promise(resolve => setTimeout(resolve, 100));
-          }
+          // Small delay after every update
+          await new Promise(resolve => setTimeout(resolve, 150));
         } catch (error) {
           errorCount++;
           errors.push(`Error updating unit ${data.unit_number}: ${error.message}`);
           log += `Error updating unit: ${error.message}\n`;
         }
       }
+
+      // Delay before starting owners
+      log += 'Waiting before processing owners...\n';
+      await new Promise(resolve => setTimeout(resolve, 500));
 
       // Create/update owners
       const ownersToCreate = [];
@@ -367,9 +372,8 @@ Deno.serve(async (req) => {
           log += `Error creating owners batch: ${error.message}\n`;
         }
         
-        if (i + BATCH_SIZE < ownersToCreate.length) {
-          await new Promise(resolve => setTimeout(resolve, 200));
-        }
+        // Always add delay after each batch
+        await new Promise(resolve => setTimeout(resolve, 300));
       }
 
       // Update owners
