@@ -2,7 +2,9 @@ import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import { createPageUrl } from '@/utils';
-import { ArrowLeft, Plus, Edit, Users, Home } from 'lucide-react';
+import { usePermissions } from '@/components/usePermissions';
+import { PERMISSIONS } from '@/components/permissions';
+import { ArrowLeft, Plus, Edit, Users, Home, Car } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -18,6 +20,7 @@ const statusColors = {
 };
 
 export default function PropertyManagementUnit() {
+  const { hasPermission } = usePermissions();
   const params = new URLSearchParams(window.location.search);
   const unitId = params.get('id');
   const associationId = params.get('associationId');
@@ -52,6 +55,12 @@ export default function PropertyManagementUnit() {
   const { data: tenants = [] } = useQuery({
     queryKey: ['tenants', unitId],
     queryFn: () => base44.entities.Tenant.filter({ unit_id: unitId }, 'last_name', 500),
+    enabled: !!unitId
+  });
+
+  const { data: vehicles = [] } = useQuery({
+    queryKey: ['vehicles', unitId],
+    queryFn: () => base44.entities.Vehicle.filter({ unit_id: unitId }),
     enabled: !!unitId
   });
 
@@ -234,17 +243,62 @@ export default function PropertyManagementUnit() {
         </CardContent>
       </Card>
 
-      {/* Compliance Placeholder */}
-      <Card className="border-0 shadow-sm bg-blue-50 border-blue-200">
-        <CardContent className="p-4">
-          <p className="text-sm text-blue-800">
-            <strong>Coming Soon:</strong> Compliance module sections will appear here:
-          </p>
-          <ul className="mt-2 text-sm text-blue-700 list-disc list-inside space-y-1">
-            <li>Vehicles assigned to this unit</li>
-            <li>Active permits</li>
-            <li>Recent parking violations</li>
-          </ul>
+      {/* Vehicles */}
+      <Card className="border-0 shadow-sm">
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <CardTitle className="text-[#414257]">Vehicles</CardTitle>
+            {hasPermission(PERMISSIONS.COMPLIANCE_VEHICLES_EDIT) && (
+              <Button
+                onClick={() => window.location.href = createPageUrl('ComplianceVehicles')}
+                variant="outline"
+                size="sm"
+              >
+                <Plus className="w-4 h-4 mr-2" />
+                Add Vehicle
+              </Button>
+            )}
+          </div>
+        </CardHeader>
+        <CardContent>
+          {vehicles.length === 0 ? (
+            <div className="text-center py-8 text-[#5c5f7a]">
+              <Car className="w-12 h-12 mx-auto mb-3 opacity-50" />
+              <p>No vehicles registered for this unit</p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {vehicles.filter(v => v.status === 'active').map((vehicle) => (
+                <div key={vehicle.id} className="p-4 bg-[#e3e4ed] rounded-lg">
+                  <div className="flex items-start justify-between">
+                    <div className="flex items-start gap-3">
+                      <Car className="w-5 h-5 text-[#414257] mt-0.5" />
+                      <div>
+                        <p className="font-semibold text-[#414257]">
+                          {vehicle.year} {vehicle.make} {vehicle.model}
+                        </p>
+                        <div className="mt-1 space-y-1 text-sm text-[#5c5f7a]">
+                          <p>License Plate: {vehicle.license_plate} {vehicle.state && `(${vehicle.state})`}</p>
+                          {vehicle.color && <p>Color: {vehicle.color}</p>}
+                          {vehicle.parking_spot && <p>Parking: {vehicle.parking_spot}</p>}
+                          <p className="capitalize">Type: {vehicle.vehicle_type}</p>
+                        </div>
+                      </div>
+                    </div>
+                    {hasPermission(PERMISSIONS.COMPLIANCE_VEHICLES_EDIT) && (
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => window.location.href = createPageUrl('ComplianceVehicles')}
+                      >
+                        <Edit className="w-4 h-4" />
+                      </Button>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </CardContent>
       </Card>
 
