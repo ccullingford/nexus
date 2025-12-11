@@ -13,15 +13,6 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import VehicleFormModal from '@/components/parking-manager/VehicleFormModal';
 
-const vehicleTypeColors = {
-  car: 'bg-blue-100 text-blue-800 border-blue-200',
-  truck: 'bg-green-100 text-green-800 border-green-200',
-  suv: 'bg-purple-100 text-purple-800 border-purple-200',
-  van: 'bg-yellow-100 text-yellow-800 border-yellow-200',
-  motorcycle: 'bg-red-100 text-red-800 border-red-200',
-  other: 'bg-gray-100 text-gray-800 border-gray-200'
-};
-
 const statusColors = {
   active: 'bg-green-100 text-green-800 border-green-200',
   archived: 'bg-gray-100 text-gray-800 border-gray-200'
@@ -274,19 +265,19 @@ export default function ParkingManagerVehicles() {
                   {filteredVehicles.map((vehicle) => (
                     <TableRow key={vehicle.id} className="hover:bg-[#f8f8fb]">
                       <TableCell>
-                        <div>
-                          <p className="font-medium">
-                            {vehicle.year} {getMakeName(vehicle.make_id)} {getModelName(vehicle.model_id)}
-                          </p>
-                          <div className="flex items-center gap-2 mt-1">
-                            <Badge variant="secondary" className={`${vehicleTypeColors[vehicle.vehicle_type]} border text-xs capitalize`}>
-                              {vehicle.vehicle_type}
-                            </Badge>
-                            {getColorName(vehicle.color_id) && (
-                              <span className="text-xs text-[#5c5f7a]">{getColorName(vehicle.color_id)}</span>
-                            )}
-                          </div>
-                        </div>
+                       <div>
+                         <p className="font-medium">
+                           {vehicle.year} {getMakeName(vehicle.make_id)} {getModelName(vehicle.model_id)}
+                         </p>
+                         <div className="flex items-center gap-2 mt-1">
+                           {vehicle.body_style_label && (
+                             <span className="text-xs text-[#5c5f7a]">{vehicle.body_style_label}</span>
+                           )}
+                           {getColorName(vehicle.color_id) && (
+                             <span className="text-xs text-[#5c5f7a]">• {getColorName(vehicle.color_id)}</span>
+                           )}
+                         </div>
+                       </div>
                       </TableCell>
                       <TableCell className="font-medium">
                         {vehicle.license_plate}
