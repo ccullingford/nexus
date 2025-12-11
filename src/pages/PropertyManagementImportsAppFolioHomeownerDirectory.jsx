@@ -141,7 +141,7 @@ export default function PropertyManagementImportsAppFolioHomeownerDirectory() {
       );
 
       // Create import job
-      await createJobMutation.mutateAsync({
+      const job = await createJobMutation.mutateAsync({
         type: IMPORT_TYPE,
         status: 'pending',
         file_name: file.name,
@@ -152,11 +152,21 @@ export default function PropertyManagementImportsAppFolioHomeownerDirectory() {
         column_mappings: filteredColumnMapping
       });
 
-      alert('Import job created! Processing will happen in the background.');
+      // Trigger backend processing
+      const processResult = await base44.functions.invoke('processAppFolioImport', {
+        importJobId: job.id
+      });
+
+      if (processResult.data.success) {
+        alert(`Import completed!\n\nProcessed: ${processResult.data.processedRows} rows\nCreated: ${processResult.data.createdRecords} records\nUpdated: ${processResult.data.updatedRecords} records\nErrors: ${processResult.data.errorCount}`);
+      } else {
+        alert('Import failed: ' + processResult.data.error);
+      }
+      
       window.location.href = createPageUrl('PropertyManagementImports');
     } catch (error) {
-      console.error('Error creating import job:', error);
-      alert('Failed to create import job: ' + error.message);
+      console.error('Error running import:', error);
+      alert('Failed to run import: ' + error.message);
     } finally {
       setProcessing(false);
     }
