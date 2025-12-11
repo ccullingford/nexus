@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import { createPageUrl } from '@/utils';
-import { Building2, Plus, Edit, MapPin } from 'lucide-react';
+import { Building2, Plus, Edit, MapPin, Search } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -21,6 +21,8 @@ export default function PropertyManagement() {
   const queryClient = useQueryClient();
   const [showModal, setShowModal] = useState(false);
   const [editingAssociation, setEditingAssociation] = useState(null);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [statusFilter, setStatusFilter] = useState('all');
   const [formData, setFormData] = useState({
     name: '',
     code: '',
@@ -113,19 +115,61 @@ export default function PropertyManagement() {
   return (
     <div className="max-w-7xl mx-auto space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-2xl font-bold text-[#414257]">Property Management</h1>
           <p className="text-[#5c5f7a] mt-1">Manage associations, units, owners, and tenants</p>
         </div>
-        <Button
-          onClick={() => handleOpenModal()}
-          className="bg-[#414257] hover:bg-[#5c5f7a]"
-        >
-          <Plus className="w-4 h-4 mr-2" />
-          New Association
-        </Button>
+        <div className="flex gap-2">
+          <Button
+            variant="outline"
+            onClick={() => window.location.href = createPageUrl('PropertyManagementImports')}
+          >
+            Import Data
+          </Button>
+          <Button
+            onClick={() => handleOpenModal()}
+            className="bg-[#414257] hover:bg-[#5c5f7a]"
+          >
+            <Plus className="w-4 h-4 mr-2" />
+            New Association
+          </Button>
+        </div>
       </div>
+
+      {/* Search & Filters */}
+      <Card className="border-0 shadow-sm mb-6">
+        <CardContent className="p-4">
+          <div className="flex flex-col sm:flex-row gap-4">
+            <div className="flex-1">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-[#5c5f7a]" />
+                <Input
+                  placeholder="Search by name, code, or city..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-10"
+                />
+              </div>
+            </div>
+            <Select value={statusFilter} onValueChange={setStatusFilter}>
+              <SelectTrigger className="w-full sm:w-48">
+                <SelectValue placeholder="All Status" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Status</SelectItem>
+                <SelectItem value="active">Active</SelectItem>
+                <SelectItem value="inactive">Inactive</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          {(searchTerm || statusFilter !== 'all') && (
+            <p className="text-sm text-[#5c5f7a] mt-3">
+              Showing {filteredAssociations.length} of {associations.length} associations
+            </p>
+          )}
+        </CardContent>
+      </Card>
 
       {/* Associations List */}
       <Card className="border-0 shadow-sm">
@@ -135,9 +179,11 @@ export default function PropertyManagement() {
         <CardContent>
           {isLoading ? (
             <div className="text-center py-8 text-[#5c5f7a]">Loading associations...</div>
-          ) : associations.length === 0 ? (
+          ) : filteredAssociations.length === 0 ? (
             <div className="text-center py-8 text-[#5c5f7a]">
-              No associations yet. Create your first one to get started.
+              {associations.length === 0 
+                ? 'No associations yet. Create your first one to get started.' 
+                : 'No associations match your search'}
             </div>
           ) : (
             <div className="overflow-x-auto">
