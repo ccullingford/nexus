@@ -91,9 +91,7 @@ export default function PropertyManagementImportsAppFolioHomeownerDirectory() {
         // Initialize mapping with defaults
         const initialMapping = {};
         headers.forEach(header => {
-          if (DEFAULT_MAPPING[header]) {
-            initialMapping[header] = DEFAULT_MAPPING[header];
-          }
+          initialMapping[header] = DEFAULT_MAPPING[header] || 'skip';
         });
         setColumnMapping(initialMapping);
 
@@ -111,9 +109,7 @@ export default function PropertyManagementImportsAppFolioHomeownerDirectory() {
     if (templateId === 'default') {
       const initialMapping = {};
       csvColumns.forEach(header => {
-        if (DEFAULT_MAPPING[header]) {
-          initialMapping[header] = DEFAULT_MAPPING[header];
-        }
+        initialMapping[header] = DEFAULT_MAPPING[header] || 'skip';
       });
       setColumnMapping(initialMapping);
     } else {
@@ -139,6 +135,11 @@ export default function PropertyManagementImportsAppFolioHomeownerDirectory() {
   const handleRunImport = async () => {
     setProcessing(true);
     try {
+      // Filter out 'skip' mappings
+      const filteredColumnMapping = Object.fromEntries(
+        Object.entries(columnMapping).filter(([, target]) => target !== 'skip' && target !== '')
+      );
+
       // Create import job
       await createJobMutation.mutateAsync({
         type: IMPORT_TYPE,
@@ -147,7 +148,8 @@ export default function PropertyManagementImportsAppFolioHomeownerDirectory() {
         file_url: fileUrl,
         mapping_template_id: selectedTemplateId,
         started_at: new Date().toISOString(),
-        total_rows: csvPreviewData.length
+        total_rows: csvPreviewData.length,
+        column_mappings: filteredColumnMapping
       });
 
       alert('Import job created! Processing will happen in the background.');
@@ -313,7 +315,7 @@ export default function PropertyManagementImportsAppFolioHomeownerDirectory() {
                         <TableCell>
                           <Select
                             value={columnMapping[column] || 'skip'}
-                            onValueChange={(value) => handleMappingChange(column, value === 'skip' ? '' : value)}
+                            onValueChange={(value) => handleMappingChange(column, value)}
                           >
                             <SelectTrigger className="w-64">
                               <SelectValue placeholder="Select target field" />
