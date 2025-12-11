@@ -74,56 +74,28 @@ export default function PropertyManagementImportsAppFolioHomeownerDirectory() {
       const { file_url } = await base44.integrations.Core.UploadFile({ file: selectedFile });
       setFileUrl(file_url);
 
-      // Fetch and parse CSV to extract columns
-      const response = await fetch(file_url);
-      const text = await response.text();
-      const lines = text.split('\n').filter(line => line.trim());
+      // Parse CSV preview using backend function
+      const response = await base44.functions.invoke('parseAppFolioHomeownerCsvPreview', {
+        fileUrl: file_url,
+        maxPreviewRows: 5
+      });
 
-      // CSV parser that handles quoted fields with commas
-      const parseCSVLine = (line) => {
-        const result = [];
-        let current = '';
-        let inQuotes = false;
-
-        for (let i = 0; i < line.length; i++) {
-          const char = line[i];
-
-          if (char === '"') {
-            inQuotes = !inQuotes;
-          } else if (char === ',' && !inQuotes) {
-            result.push(current.trim());
-            current = '';
-          } else {
-            current += char;
-          }
-        }
-        result.push(current.trim());
-        return result;
-      };
-
-      if (lines.length > 0) {
-        const headers = parseCSVLine(lines[0]).map(h => h.replace(/^"|"$/g, ''));
-        setCsvColumns(headers);
-
-        // Parse first 5 rows for preview
-        const previewRows = lines.slice(1, 6).map(line => {
-          const values = parseCSVLine(line).map(v => v.replace(/^"|"$/g, ''));
-          return headers.reduce((obj, header, index) => {
-            obj[header] = values[index] || '';
-            return obj;
-          }, {});
-        });
-        setCsvPreviewData(previewRows);
-
-        // Initialize mapping with defaults
-        const initialMapping = {};
-        headers.forEach(header => {
-          initialMapping[header] = DEFAULT_MAPPING[header] || 'skip';
-        });
-        setColumnMapping(initialMapping);
-
-        setStep('map');
+      if (!response.data.success) {
+        throw new Error(response.data.error || 'Failed to parse CSV');
       }
+
+      const { headers, previewRows } = response.data.data;
+      setCsvColumns(headers);
+      setCsvPreviewData(previewRows);
+
+      // Initialize mapping with defaults
+      const initialMapping = {};
+      headers.forEach(header => {
+        initialMapping[header] = DEFAULT_MAPPING[header] || 'skip';
+      });
+      setColumnMapping(initialMapping);
+
+      setStep('map');
     } catch (error) {
       console.error('Error uploading file:', error);
       alert('Failed to upload file: ' + error.message);
@@ -161,46 +133,46 @@ export default function PropertyManagementImportsAppFolioHomeownerDirectory() {
 
   const handleRunImport = async () => {
     setProcessing(true);
+    setStep('processing');
+    
     try {
-      console.log('Raw column mapping:', columnMapping);
-      
       // Filter out 'skip' mappings
       const filteredColumnMapping = Object.fromEntries(
         Object.entries(columnMapping).filter(([, target]) => target !== 'skip' && target !== '')
       );
 
-      console.log('Filtered column mapping:', filteredColumnMapping);
-      console.log('Number of mappings:', Object.keys(filteredColumnMapping).length);
-      
-      // Create import job
-      const job = await createJobMutation.mutateAsync({
-        type: IMPORT_TYPE,
-        status: 'pending',
-        file_name: file.name,
-        file_url: fileUrl,
-        mapping_template_id: selectedTemplateId,
-        started_at: new Date().toISOString(),
-        total_rows: csvPreviewData.length,
-        column_mappings: filteredColumnMapping
-      });
-      
-      console.log('Created job:', job);
-
-      // Trigger backend processing
-      const processResult = await base44.functions.invoke('processAppFolioImport', {
-        importJobId: job.id
+      // Run import using backend function
+      const response = await base44.functions.invoke('runAppFolioHomeownerImport', {
+        fileUrl: fileUrl,
+        columnMappings: filteredColumnMapping
       });
 
-      if (processResult.data.success) {
-        alert(`Import completed!\n\nProcessed: ${processResult.data.processedRows} rows\nCreated: ${processResult.data.createdRecords} records\nUpdated: ${processResult.data.updatedRecords} records\nErrors: ${processResult.data.errorCount}`);
-      } else {
-        alert('Import failed: ' + processResult.data.error);
+      if (!response.data.success) {
+        alert('Import failed: ' + (response.data.error || 'Unknown error'));
+        setStep('review');
+        return;
       }
 
+      const { processedRows, createdRecords, updatedRecords, errorCount, errors } = response.data.data;
+
+      // Show summary
+      let message = `Import completed!\n\n`;
+      message += `Processed: ${processedRows} rows\n`;
+      message += `Created: ${createdRecords} records\n`;
+      message += `Updated: ${updatedRecords} records\n`;
+      if (errorCount > 0) {
+        message += `Errors: ${errorCount}\n`;
+        if (errors && errors.length > 0) {
+          message += `\nFirst errors:\n${errors.slice(0, 3).join('\n')}`;
+        }
+      }
+
+      alert(message);
       navigate(createPageUrl('PropertyManagementImports'));
     } catch (error) {
       console.error('Error running import:', error);
       alert('Failed to run import: ' + error.message);
+      setStep('review');
     } finally {
       setProcessing(false);
     }
