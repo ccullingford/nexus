@@ -136,7 +136,8 @@ Deno.serve(async (req) => {
           }
         }
 
-        if (ownerData.first_name || ownerData.last_name) {
+        // Include owner if there's a company name OR first/last name
+        if (ownerData.company_name || ownerData.first_name || ownerData.last_name) {
           ownerList.push({
             associationKey: assocKey,
             unitNumber: unitData.unit_number,
@@ -242,18 +243,29 @@ Deno.serve(async (req) => {
           const unitKey = `${associationKey}_${unitNumber}`;
           const unitId = unitIdMap.get(unitKey);
 
+          const ownerName = ownerData.company_name || `${ownerData.first_name} ${ownerData.last_name}`;
+
           if (!associationId || !unitId) {
-            log += `Skipping owner ${ownerData.first_name} ${ownerData.last_name} - missing association or unit\n`;
+            log += `Skipping owner ${ownerName} - missing association or unit\n`;
             continue;
           }
 
-          // Check if owner exists
-          const existing = await base44.asServiceRole.entities.Owner.filter({
-            association_id: associationId,
-            unit_id: unitId,
-            first_name: ownerData.first_name,
-            last_name: ownerData.last_name
-          });
+          // Check if owner exists - match by company name OR first/last name
+          let existing = [];
+          if (ownerData.company_name) {
+            existing = await base44.asServiceRole.entities.Owner.filter({
+              association_id: associationId,
+              unit_id: unitId,
+              company_name: ownerData.company_name
+            });
+          } else if (ownerData.first_name && ownerData.last_name) {
+            existing = await base44.asServiceRole.entities.Owner.filter({
+              association_id: associationId,
+              unit_id: unitId,
+              first_name: ownerData.first_name,
+              last_name: ownerData.last_name
+            });
+          }
 
           if (existing.length > 0) {
             // Update existing
@@ -263,7 +275,7 @@ Deno.serve(async (req) => {
               unit_id: unitId
             });
             updatedRecords++;
-            log += `Updated owner: ${ownerData.first_name} ${ownerData.last_name}\n`;
+            log += `Updated owner: ${ownerName}\n`;
           } else {
             // Create new
             await base44.asServiceRole.entities.Owner.create({
@@ -273,13 +285,13 @@ Deno.serve(async (req) => {
               is_primary_owner: true
             });
             createdRecords++;
-            log += `Created owner: ${ownerData.first_name} ${ownerData.last_name}\n`;
+            log += `Created owner: ${ownerName}\n`;
           }
-        } catch (error) {
+          } catch (error) {
           errorCount++;
-          log += `Error with owner ${ownerData.first_name} ${ownerData.last_name}: ${error.message}\n`;
-        }
-      }
+          log += `Error with owner ${ownerName}: ${error.message}\n`;
+          }
+          }
 
       // Update job as completed
       await base44.asServiceRole.entities.ImportJob.update(job.id, {

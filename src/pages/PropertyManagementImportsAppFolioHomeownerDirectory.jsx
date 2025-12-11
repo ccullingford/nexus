@@ -17,6 +17,7 @@ const IMPORT_TYPE = 'appfolio_homeowner_directory';
 const DEFAULT_MAPPING = {
   'Property Name': 'association.name',
   'Unit': 'unit.unit_number',
+  'Homeowner': 'owner.company_name',
   'First Name': 'owner.first_name',
   'Last Name': 'owner.last_name',
   'Emails': 'owner.email',
@@ -216,6 +217,7 @@ export default function PropertyManagementImportsAppFolioHomeownerDirectory() {
     { value: 'unit.unit_number', label: 'Unit: Unit Number' },
     { value: 'unit.bedrooms', label: 'Unit: Bedrooms' },
     { value: 'unit.street_address', label: 'Unit: Street Address' },
+    { value: 'owner.company_name', label: 'Owner: Company/Organization Name' },
     { value: 'owner.first_name', label: 'Owner: First Name' },
     { value: 'owner.last_name', label: 'Owner: Last Name' },
     { value: 'owner.email', label: 'Owner: Email' },
