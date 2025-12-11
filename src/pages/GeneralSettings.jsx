@@ -42,12 +42,14 @@ export default function GeneralSettings() {
     loadSyncStatus();
   }, []);
 
-  const handleSyncMakes = async () => {
+  const handleSyncVehicleData = async () => {
     setSyncingMakes(true);
     try {
-      const response = await base44.functions.invoke('syncVehicleMakesFromNhtsa');
+      const response = await base44.functions.invoke('syncVehicleDataFromNhtsaBulk');
       if (response.data.success) {
-        alert(`Sync completed! Created: ${response.data.created}, Updated: ${response.data.updated}`);
+        const makes = response.data.makes || {};
+        const models = response.data.models || {};
+        alert(`Sync completed!\n\nMakes: ${makes.created || 0} created, ${makes.updated || 0} updated (${makes.total_popular || 0} popular)\nModels: ${models.created || 0} created, ${models.updated || 0} updated\n\nDuration: ${response.data.duration_seconds}s`);
         // Reload sync status
         const statusResponse = await base44.functions.invoke('getParkingSyncStatus');
         if (statusResponse.data.success) {
@@ -57,7 +59,7 @@ export default function GeneralSettings() {
         alert('Sync failed: ' + response.data.error);
       }
     } catch (error) {
-      console.error('Error syncing makes:', error);
+      console.error('Error syncing vehicle data:', error);
       alert('Sync failed: ' + error.message);
     } finally {
       setSyncingMakes(false);
@@ -175,7 +177,7 @@ export default function GeneralSettings() {
                 <div>
                   <CardTitle className="text-[#414257]">Parking Manager</CardTitle>
                   <CardDescription className="mt-1">
-                    Sync vehicle makes and models from NHTSA database
+                    Sync popular vehicle makes and models from NHTSA (last 20 years)
                   </CardDescription>
                 </div>
               </div>
@@ -227,19 +229,19 @@ export default function GeneralSettings() {
             )}
 
             <Button 
-              onClick={handleSyncMakes}
+              onClick={handleSyncVehicleData}
               disabled={syncingMakes}
               className="w-full bg-[#414257] hover:bg-[#5c5f7a]"
             >
               {syncingMakes ? (
                 <>
                   <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
-                  Syncing Makes...
+                  Syncing Vehicle Data...
                 </>
               ) : (
                 <>
                   <RefreshCw className="w-4 h-4 mr-2" />
-                  Sync Makes from NHTSA
+                  Sync Vehicle Data
                 </>
               )}
             </Button>
