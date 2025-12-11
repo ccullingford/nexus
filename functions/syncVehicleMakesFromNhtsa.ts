@@ -1,9 +1,9 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.4';
 
 Deno.serve(async (req) => {
+  const base44 = createClientFromRequest(req);
+  
   try {
-    const base44 = createClientFromRequest(req);
-    
     // Verify user is authenticated
     const user = await base44.auth.me();
     if (!user) {
@@ -44,6 +44,10 @@ Deno.serve(async (req) => {
     let updated = 0;
     let skipped = 0;
 
+    // Prepare batches for bulk operations
+    const toCreate = [];
+    const toUpdate = [];
+
     // Process each NHTSA make
     for (const nhtsMake of nhtsMakes) {
       const makeName = (nhtsMake.Make_Name || '').trim();
@@ -58,9 +62,9 @@ Deno.serve(async (req) => {
       const existingMake = existingMakesMap.get(normalizedName);
 
       if (existingMake) {
-        // Update if name changed or if not active
+        // Check if update needed
         let needsUpdate = false;
-        const updates = {};
+        const updates = { id: existingMake.id };
 
         if (existingMake.name !== makeName) {
           updates.name = makeName;
@@ -78,25 +82,49 @@ Deno.serve(async (req) => {
         }
 
         if (needsUpdate) {
-          await base44.asServiceRole.entities.VehicleMake.update(existingMake.id, updates);
-          updated++;
+          toUpdate.push(updates);
         } else {
           skipped++;
         }
       } else {
-        // Create new make
-        await base44.asServiceRole.entities.VehicleMake.create({
+        // Prepare for bulk create
+        toCreate.push({
           name: makeName,
           normalized_name: normalizedName,
           nhtsa_make_id: makeId,
           is_active: true
         });
-        created++;
       }
+    }
 
-      // Add small delay every 50 items to avoid rate limits
-      if ((created + updated + skipped) % 50 === 0) {
-        await new Promise(resolve => setTimeout(resolve, 100));
+    // Bulk create in batches of 50
+    if (toCreate.length > 0) {
+      console.log(`Creating ${toCreate.length} new makes in batches...`);
+      for (let i = 0; i < toCreate.length; i += 50) {
+        const batch = toCreate.slice(i, i + 50);
+        await base44.asServiceRole.entities.VehicleMake.bulkCreate(batch);
+        created += batch.length;
+        // Small delay between batches
+        if (i + 50 < toCreate.length) {
+          await new Promise(resolve => setTimeout(resolve, 500));
+        }
+      }
+    }
+
+    // Update in batches of 20 (updates are more expensive)
+    if (toUpdate.length > 0) {
+      console.log(`Updating ${toUpdate.length} existing makes...`);
+      for (let i = 0; i < toUpdate.length; i += 20) {
+        const batch = toUpdate.slice(i, i + 20);
+        for (const update of batch) {
+          const { id, ...data } = update;
+          await base44.asServiceRole.entities.VehicleMake.update(id, data);
+          updated++;
+        }
+        // Small delay between batches
+        if (i + 20 < toUpdate.length) {
+          await new Promise(resolve => setTimeout(resolve, 500));
+        }
       }
     }
 
