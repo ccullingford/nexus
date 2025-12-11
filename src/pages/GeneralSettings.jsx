@@ -33,7 +33,7 @@ export default function GeneralSettings() {
   }
 
   // Check if user has admin access
-  const hasAccess = user && (user.role === 'Super Admin' || user.role === 'Org Admin');
+  const hasAccess = user && (user.role === 'admin' || user.role === 'Super Admin' || user.role === 'Org Admin');
 
   if (!hasAccess) {
     return (
