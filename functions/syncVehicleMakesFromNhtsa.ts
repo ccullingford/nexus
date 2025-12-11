@@ -97,33 +97,38 @@ Deno.serve(async (req) => {
       }
     }
 
-    // Bulk create in batches of 50
+    // Bulk create in small batches of 10 with longer delays
     if (toCreate.length > 0) {
-      console.log(`Creating ${toCreate.length} new makes in batches...`);
-      for (let i = 0; i < toCreate.length; i += 50) {
-        const batch = toCreate.slice(i, i + 50);
+      console.log(`Creating ${toCreate.length} new makes in batches of 10...`);
+      for (let i = 0; i < toCreate.length; i += 10) {
+        const batch = toCreate.slice(i, i + 10);
         await base44.asServiceRole.entities.VehicleMake.bulkCreate(batch);
         created += batch.length;
-        // Small delay between batches
-        if (i + 50 < toCreate.length) {
-          await new Promise(resolve => setTimeout(resolve, 500));
+        console.log(`Created batch ${Math.floor(i / 10) + 1}/${Math.ceil(toCreate.length / 10)}, total created: ${created}`);
+        // 2 second delay between batches to avoid rate limits
+        if (i + 10 < toCreate.length) {
+          await new Promise(resolve => setTimeout(resolve, 2000));
         }
       }
     }
 
-    // Update in batches of 20 (updates are more expensive)
+    // Update individually with delays (safest approach)
     if (toUpdate.length > 0) {
-      console.log(`Updating ${toUpdate.length} existing makes...`);
-      for (let i = 0; i < toUpdate.length; i += 20) {
-        const batch = toUpdate.slice(i, i + 20);
-        for (const update of batch) {
-          const { id, ...data } = update;
-          await base44.asServiceRole.entities.VehicleMake.update(id, data);
-          updated++;
+      console.log(`Updating ${toUpdate.length} existing makes one at a time...`);
+      for (let i = 0; i < toUpdate.length; i++) {
+        const update = toUpdate[i];
+        const { id, ...data } = update;
+        await base44.asServiceRole.entities.VehicleMake.update(id, data);
+        updated++;
+        
+        // Log progress every 50 updates
+        if ((i + 1) % 50 === 0) {
+          console.log(`Updated ${i + 1}/${toUpdate.length} makes`);
         }
-        // Small delay between batches
-        if (i + 20 < toUpdate.length) {
-          await new Promise(resolve => setTimeout(resolve, 500));
+        
+        // 1 second delay between each update
+        if (i < toUpdate.length - 1) {
+          await new Promise(resolve => setTimeout(resolve, 1000));
         }
       }
     }
