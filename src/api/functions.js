@@ -37,3 +37,13 @@ export const updatePermitExpiration = base44.functions.updatePermitExpiration;
 
 export const checkExpiredPermits = base44.functions.checkExpiredPermits;
 
+export const replacePermit = base44.functions.replacePermit;
+
+export const permit_issue = base44.functions.permit_issue;
+
+export const permit_revoke = base44.functions.permit_revoke;
+
+export const permit_update_expiration = base44.functions.permit_update_expiration;
+
+export const permit_replace = base44.functions.permit_replace;
+

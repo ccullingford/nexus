@@ -12,9 +12,7 @@ import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import OwnerFormModal from '@/components/property-management/OwnerFormModal';
 import TenantFormModal from '@/components/property-management/TenantFormModal';
-import IssuePermitModal from '@/components/parking-manager/IssuePermitModal';
 import { format } from 'date-fns';
-import { computePermitCapsForUnit } from '@/components/parking-manager/permitCaps';
 
 const statusColors = {
   occupied: 'bg-blue-100 text-blue-800 border-blue-200',
@@ -31,8 +29,6 @@ export default function PropertyManagementUnit() {
 
   const [showOwnerModal, setShowOwnerModal] = useState(false);
   const [showTenantModal, setShowTenantModal] = useState(false);
-  const [showPermitModal, setShowPermitModal] = useState(false);
-  const [voidingPermit, setVoidingPermit] = useState(null);
 
   const { data: unit, isLoading } = useQuery({
     queryKey: ['unit', unitId],
@@ -91,11 +87,7 @@ export default function PropertyManagementUnit() {
     enabled: !!unitId
   });
 
-  // Calculate permit caps
-  const activePermits = permits.filter(p => p.status === 'active');
-  const permitCaps = association && unit 
-    ? computePermitCapsForUnit(association, unit, activePermits)
-    : null;
+  // Permits lifecycle rebuilt from scratch
 
   if (isLoading) {
     return <div className="text-center py-12 text-[#5c5f7a]">Loading unit...</div>;
@@ -130,43 +122,7 @@ export default function PropertyManagementUnit() {
     return `${vehicle.year || ''} ${getMakeName(vehicle.make_id)} ${getModelName(vehicle.model_id)} (${vehicle.license_plate})`.trim();
   };
 
-  const handleVoidPermit = async (permit) => {
-    const reason = prompt('Enter reason for voiding this permit:');
-    if (!reason) return;
-    
-    setVoidingPermit(permit.id);
-    try {
-      await base44.functions.invoke('updatePermitStatus', {
-        permitId: permit.id,
-        status: 'void',
-        voidReason: reason
-      });
-      // Refresh permits
-      queryClient.invalidateQueries({ queryKey: ['permits', unitId] });
-    } catch (error) {
-      alert('Failed to void permit: ' + error.message);
-    } finally {
-      setVoidingPermit(null);
-    }
-  };
 
-  const handleExpirePermit = async (permit) => {
-    if (!confirm('Are you sure you want to mark this permit as expired?')) return;
-    
-    setVoidingPermit(permit.id);
-    try {
-      await base44.functions.invoke('updatePermitStatus', {
-        permitId: permit.id,
-        status: 'expired'
-      });
-      // Refresh permits
-      queryClient.invalidateQueries({ queryKey: ['permits', unitId] });
-    } catch (error) {
-      alert('Failed to expire permit: ' + error.message);
-    } finally {
-      setVoidingPermit(null);
-    }
-  };
 
   return (
     <div className="max-w-5xl mx-auto space-y-6">
@@ -403,144 +359,32 @@ export default function PropertyManagementUnit() {
         <CardHeader>
           <div className="flex items-center justify-between">
             <CardTitle className="text-[#414257]">Permits</CardTitle>
-            {hasPermission(PERMISSIONS.PARKING_MANAGER_PERMITS_ISSUE) && (
+            {hasPermission(PERMISSIONS.PARKING_MANAGER_PERMITS_VIEW) && (
               <Button
-                onClick={() => setShowPermitModal(true)}
-                className="bg-[#414257] hover:bg-[#5c5f7a]"
+                onClick={() => window.location.href = createPageUrl('ParkingManagerPermits') + `?unitId=${unitId}`}
+                variant="outline"
                 size="sm"
               >
-                <Plus className="w-4 h-4 mr-2" />
-                Issue Permit
+                <FileCheck className="w-4 h-4 mr-2" />
+                View Permits
               </Button>
             )}
           </div>
         </CardHeader>
-        <CardContent className="space-y-4">
-          {/* Permit Cap Summary */}
-          {permitCaps && (
-            <div className="p-4 bg-[#f8f8fb] rounded-lg border border-[#e3e4ed]">
-              <h4 className="font-semibold text-[#414257] text-sm mb-3">Permit Capacity</h4>
-              <div className="grid grid-cols-2 gap-4 text-sm">
-                <div>
-                  <p className="text-[#5c5f7a] mb-1">Resident Permits</p>
-                  <p className="text-lg font-semibold text-[#414257]">
-                    {permitCaps.activeResidentPermitsCount} / {permitCaps.maxResidentPermits}
-                  </p>
-                  <p className="text-xs text-[#5c5f7a] mt-1">
-                    {permitCaps.residentRemaining} remaining
-                  </p>
-                </div>
-                <div>
-                  <p className="text-[#5c5f7a] mb-1">Visitor Permits</p>
-                  <p className="text-lg font-semibold text-[#414257]">
-                    {permitCaps.activeVisitorPermitsCount} / {permitCaps.maxVisitorPermits}
-                  </p>
-                  <p className="text-xs text-[#5c5f7a] mt-1">
-                    {permitCaps.visitorRemaining} remaining
-                  </p>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Permits Table */}
-          {permits.length === 0 ? (
-            <div className="text-center py-8 text-[#5c5f7a]">
-              <FileCheck className="w-12 h-12 mx-auto mb-3 opacity-50" />
-              <p>No permits issued for this unit</p>
-            </div>
-          ) : (
-            <div className="overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Permit #</TableHead>
-                    <TableHead>Type</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Vehicle</TableHead>
-                    <TableHead>Issued</TableHead>
-                    <TableHead>Expires</TableHead>
-                    {hasPermission(PERMISSIONS.PARKING_MANAGER_PERMITS_EDIT) && (
-                      <TableHead className="text-right">Actions</TableHead>
-                    )}
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {permits.map((permit) => (
-                    <TableRow key={permit.id}>
-                      <TableCell className="font-medium">
-                        {permit.permit_number || '—'}
-                      </TableCell>
-                      <TableCell>
-                        <Badge 
-                          variant="outline" 
-                          className={`capitalize ${
-                            permit.type === 'resident' || permit.type === 'additional' 
-                              ? 'bg-blue-50 text-blue-700 border-blue-200' 
-                              : permit.type === 'visitor' 
-                                ? 'bg-purple-50 text-purple-700 border-purple-200'
-                                : 'bg-gray-50 text-gray-700 border-gray-200'
-                          }`}
-                        >
-                          {permit.type}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        <Badge 
-                          className={`capitalize ${
-                            permit.status === 'active' 
-                              ? 'bg-green-100 text-green-800 border-green-200' 
-                              : permit.status === 'void'
-                                ? 'bg-red-100 text-red-800 border-red-200'
-                                : permit.status === 'expired'
-                                  ? 'bg-yellow-100 text-yellow-800 border-yellow-200'
-                                  : 'bg-gray-100 text-gray-800 border-gray-200'
-                          } border`}
-                        >
-                          {permit.status}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="text-[#5c5f7a] text-sm">
-                        {getVehicleInfo(permit.vehicle_id)}
-                      </TableCell>
-                      <TableCell className="text-[#5c5f7a] text-sm">
-                        {permit.issued_at ? format(new Date(permit.issued_at), 'MMM d, yyyy') : '—'}
-                      </TableCell>
-                      <TableCell className="text-[#5c5f7a] text-sm">
-                        {permit.expires_at ? format(new Date(permit.expires_at), 'MMM d, yyyy') : '—'}
-                      </TableCell>
-                      {hasPermission(PERMISSIONS.PARKING_MANAGER_PERMITS_EDIT) && (
-                        <TableCell className="text-right">
-                          {permit.status === 'active' && (
-                            <div className="flex items-center justify-end gap-1">
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => handleVoidPermit(permit)}
-                                disabled={voidingPermit === permit.id}
-                                title="Void Permit"
-                              >
-                                <XCircle className="w-4 h-4 text-red-600" />
-                              </Button>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => handleExpirePermit(permit)}
-                                disabled={voidingPermit === permit.id}
-                                title="Mark as Expired"
-                              >
-                                <Clock className="w-4 h-4 text-yellow-600" />
-                              </Button>
-                            </div>
-                          )}
-                        </TableCell>
-                      )}
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
-          )}
+        <CardContent>
+          <div className="text-center py-8 text-[#5c5f7a]">
+            <FileCheck className="w-12 h-12 mx-auto mb-3 opacity-50" />
+            <p className="mb-2">{permits.length} permit{permits.length !== 1 ? 's' : ''} issued for this unit</p>
+            {hasPermission(PERMISSIONS.PARKING_MANAGER_PERMITS_VIEW) && (
+              <Button
+                onClick={() => window.location.href = createPageUrl('ParkingManagerPermits') + `?unitId=${unitId}`}
+                variant="link"
+                className="text-[#414257]"
+              >
+                View all permits →
+              </Button>
+            )}
+          </div>
         </CardContent>
       </Card>
 
@@ -558,12 +402,6 @@ export default function PropertyManagementUnit() {
         associationId={associationId}
         units={[unit]}
         preselectedUnitId={unitId}
-      />
-      <IssuePermitModal
-        open={showPermitModal}
-        onClose={() => setShowPermitModal(false)}
-        associationId={associationId}
-        unitId={unitId}
       />
     </div>
   );

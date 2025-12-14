@@ -4,7 +4,7 @@ import { base44 } from '@/api/base44Client';
 import { createPageUrl } from '@/utils';
 import { usePermissions } from '@/components/usePermissions';
 import { PERMISSIONS } from '@/components/permissions';
-import { Car, Plus, Search, Edit, Archive, FileCheck, ChevronDown, ChevronUp } from 'lucide-react';
+import { Car, Plus, Search, Edit, Archive, ChevronDown, ChevronUp } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -12,7 +12,6 @@ import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import VehicleFormModal from '@/components/parking-manager/VehicleFormModal';
-import IssuePermitModal from '@/components/parking-manager/IssuePermitModal';
 import { format } from 'date-fns';
 
 const statusColors = {
@@ -28,8 +27,6 @@ export default function ParkingManagerVehicles() {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('active');
   const [expandedVehicle, setExpandedVehicle] = useState(null);
-  const [showPermitModal, setShowPermitModal] = useState(false);
-  const [permitVehicle, setPermitVehicle] = useState(null);
 
   const { data: vehicles = [], isLoading } = useQuery({
     queryKey: ['vehicles'],
@@ -71,10 +68,7 @@ export default function ParkingManagerVehicles() {
     queryFn: () => base44.entities.VehicleColor.list('name', 500)
   });
 
-  const { data: permits = [] } = useQuery({
-    queryKey: ['permits'],
-    queryFn: () => base44.entities.Permit.list('-issued_at', 500)
-  });
+  // Permits lifecycle rebuilt from scratch
 
   const archiveMutation = useMutation({
     mutationFn: ({ id, status }) => base44.entities.Vehicle.update(id, { status }),
@@ -178,18 +172,11 @@ export default function ParkingManagerVehicles() {
     archiveMutation.mutate({ id: vehicle.id, status: 'active' });
   };
 
-  const toggleExpand = (vehicleId) => {
-    setExpandedVehicle(expandedVehicle === vehicleId ? null : vehicleId);
-  };
 
-  const getVehiclePermits = (vehicleId) => {
-    return permits.filter(p => p.vehicle_id === vehicleId);
-  };
 
-  const handleIssuePermit = (vehicle) => {
-    setPermitVehicle(vehicle);
-    setShowPermitModal(true);
-  };
+
+
+
 
   return (
     <div className="max-w-7xl mx-auto space-y-6">
@@ -285,179 +272,73 @@ export default function ParkingManagerVehicles() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {filteredVehicles.map((vehicle) => {
-                    const vehiclePermits = getVehiclePermits(vehicle.id);
-                    const isExpanded = expandedVehicle === vehicle.id;
-                    
-                    return (
-                      <React.Fragment key={vehicle.id}>
-                        <TableRow className="hover:bg-[#f8f8fb]">
-                          <TableCell>
-                           <div>
-                             <p className="font-medium">
-                               {vehicle.year} {getMakeName(vehicle.make_id)} {getModelName(vehicle.model_id)}
-                             </p>
-                             <div className="flex items-center gap-2 mt-1">
-                               {vehicle.body_style_label && (
-                                 <span className="text-xs text-[#5c5f7a]">{vehicle.body_style_label}</span>
-                               )}
-                               {getColorName(vehicle.color_id) && (
-                                 <span className="text-xs text-[#5c5f7a]">• {getColorName(vehicle.color_id)}</span>
-                               )}
-                             </div>
-                           </div>
-                          </TableCell>
-                          <TableCell className="font-medium">
-                            {vehicle.license_plate}
-                            {vehicle.state && (
-                              <span className="text-xs text-[#5c5f7a] ml-1">({vehicle.state})</span>
-                            )}
-                          </TableCell>
-                          <TableCell className="text-[#5c5f7a]">{getAssociationName(vehicle.association_id)}</TableCell>
-                          <TableCell className="text-[#5c5f7a]">{getUnitNumber(vehicle.unit_id)}</TableCell>
-                          <TableCell className="text-[#5c5f7a]">{getPersonName(vehicle)}</TableCell>
-                          <TableCell className="text-[#5c5f7a]">{vehicle.parking_spot || '—'}</TableCell>
-                          <TableCell>
-                            <Badge variant="secondary" className={`${statusColors[vehicle.status]} border capitalize`}>
-                              {vehicle.status}
-                            </Badge>
-                          </TableCell>
-                          <TableCell className="text-right">
-                            <div className="flex items-center justify-end gap-1">
+                  {filteredVehicles.map((vehicle) => (
+                    <TableRow key={vehicle.id} className="hover:bg-[#f8f8fb]">
+                      <TableCell>
+                       <div>
+                         <p className="font-medium">
+                           {vehicle.year} {getMakeName(vehicle.make_id)} {getModelName(vehicle.model_id)}
+                         </p>
+                         <div className="flex items-center gap-2 mt-1">
+                           {vehicle.body_style_label && (
+                             <span className="text-xs text-[#5c5f7a]">{vehicle.body_style_label}</span>
+                           )}
+                           {getColorName(vehicle.color_id) && (
+                             <span className="text-xs text-[#5c5f7a]">• {getColorName(vehicle.color_id)}</span>
+                           )}
+                         </div>
+                       </div>
+                      </TableCell>
+                      <TableCell className="font-medium">
+                        {vehicle.license_plate}
+                        {vehicle.state && (
+                          <span className="text-xs text-[#5c5f7a] ml-1">({vehicle.state})</span>
+                        )}
+                      </TableCell>
+                      <TableCell className="text-[#5c5f7a]">{getAssociationName(vehicle.association_id)}</TableCell>
+                      <TableCell className="text-[#5c5f7a]">{getUnitNumber(vehicle.unit_id)}</TableCell>
+                      <TableCell className="text-[#5c5f7a]">{getPersonName(vehicle)}</TableCell>
+                      <TableCell className="text-[#5c5f7a]">{vehicle.parking_spot || '—'}</TableCell>
+                      <TableCell>
+                        <Badge variant="secondary" className={`${statusColors[vehicle.status]} border capitalize`}>
+                          {vehicle.status}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <div className="flex items-center justify-end gap-1">
+                          {hasPermission(PERMISSIONS.PARKING_MANAGER_VEHICLES_EDIT) && (
+                            <>
                               <Button
                                 variant="ghost"
                                 size="icon"
-                                onClick={() => toggleExpand(vehicle.id)}
-                                title={isExpanded ? "Hide permits" : "Show permits"}
+                                onClick={() => handleEdit(vehicle)}
                               >
-                                {isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                                <Edit className="w-4 h-4" />
                               </Button>
-                              {hasPermission(PERMISSIONS.PARKING_MANAGER_VEHICLES_EDIT) && (
-                                <>
-                                  <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    onClick={() => handleEdit(vehicle)}
-                                  >
-                                    <Edit className="w-4 h-4" />
-                                  </Button>
-                                  {vehicle.status === 'active' ? (
-                                    <Button
-                                      variant="ghost"
-                                      size="icon"
-                                      onClick={() => handleArchive(vehicle)}
-                                    >
-                                      <Archive className="w-4 h-4" />
-                                    </Button>
-                                  ) : (
-                                    <Button
-                                      variant="ghost"
-                                      size="icon"
-                                      onClick={() => handleReactivate(vehicle)}
-                                      title="Reactivate"
-                                    >
-                                      <Car className="w-4 h-4" />
-                                    </Button>
-                                  )}
-                                </>
+                              {vehicle.status === 'active' ? (
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  onClick={() => handleArchive(vehicle)}
+                                >
+                                  <Archive className="w-4 h-4" />
+                                </Button>
+                              ) : (
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  onClick={() => handleReactivate(vehicle)}
+                                  title="Reactivate"
+                                >
+                                  <Car className="w-4 h-4" />
+                                </Button>
                               )}
-                            </div>
-                          </TableCell>
-                        </TableRow>
-                        
-                        {/* Expanded Permits Panel */}
-                        {isExpanded && (
-                          <TableRow>
-                            <TableCell colSpan={8} className="bg-[#f8f8fb] p-6">
-                              <div className="space-y-4">
-                                <div className="flex items-center justify-between">
-                                  <h4 className="font-semibold text-[#414257] flex items-center gap-2">
-                                    <FileCheck className="w-5 h-5" />
-                                    Permits for this Vehicle
-                                  </h4>
-                                  {hasPermission(PERMISSIONS.PARKING_MANAGER_PERMITS_ISSUE) && (
-                                    <Button
-                                      onClick={() => handleIssuePermit(vehicle)}
-                                      size="sm"
-                                      className="bg-[#414257] hover:bg-[#5c5f7a]"
-                                    >
-                                      <Plus className="w-4 h-4 mr-2" />
-                                      Issue Permit for this Vehicle
-                                    </Button>
-                                  )}
-                                </div>
-                                
-                                {vehiclePermits.length === 0 ? (
-                                  <div className="text-center py-8 text-[#5c5f7a] bg-white rounded-lg border border-[#e3e4ed]">
-                                    <FileCheck className="w-12 h-12 mx-auto mb-3 opacity-50" />
-                                    <p>No permits issued for this vehicle</p>
-                                  </div>
-                                ) : (
-                                  <div className="bg-white rounded-lg border border-[#e3e4ed] overflow-hidden">
-                                    <Table>
-                                      <TableHeader>
-                                        <TableRow>
-                                          <TableHead>Permit #</TableHead>
-                                          <TableHead>Type</TableHead>
-                                          <TableHead>Status</TableHead>
-                                          <TableHead>Issued</TableHead>
-                                          <TableHead>Expires</TableHead>
-                                        </TableRow>
-                                      </TableHeader>
-                                      <TableBody>
-                                        {vehiclePermits.map((permit) => (
-                                          <TableRow key={permit.id}>
-                                            <TableCell className="font-medium">
-                                              {permit.permit_number || '—'}
-                                            </TableCell>
-                                            <TableCell>
-                                              <Badge 
-                                                variant="outline"
-                                                className={`capitalize ${
-                                                  permit.type === 'resident' || permit.type === 'additional' 
-                                                    ? 'bg-blue-50 text-blue-700 border-blue-200' 
-                                                    : permit.type === 'visitor' 
-                                                      ? 'bg-purple-50 text-purple-700 border-purple-200'
-                                                      : 'bg-gray-50 text-gray-700 border-gray-200'
-                                                }`}
-                                              >
-                                                {permit.type}
-                                              </Badge>
-                                            </TableCell>
-                                            <TableCell>
-                                              <Badge 
-                                                className={`capitalize ${
-                                                  permit.status === 'active' 
-                                                    ? 'bg-green-100 text-green-800 border-green-200' 
-                                                    : permit.status === 'void'
-                                                      ? 'bg-red-100 text-red-800 border-red-200'
-                                                      : permit.status === 'expired'
-                                                        ? 'bg-yellow-100 text-yellow-800 border-yellow-200'
-                                                        : 'bg-gray-100 text-gray-800 border-gray-200'
-                                                } border`}
-                                              >
-                                                {permit.status}
-                                              </Badge>
-                                            </TableCell>
-                                            <TableCell className="text-[#5c5f7a] text-sm">
-                                              {permit.issued_at ? format(new Date(permit.issued_at), 'MMM d, yyyy') : '—'}
-                                            </TableCell>
-                                            <TableCell className="text-[#5c5f7a] text-sm">
-                                              {permit.expires_at ? format(new Date(permit.expires_at), 'MMM d, yyyy') : '—'}
-                                            </TableCell>
-                                          </TableRow>
-                                        ))}
-                                      </TableBody>
-                                    </Table>
-                                  </div>
-                                )}
-                              </div>
-                            </TableCell>
-                          </TableRow>
-                        )}
-                      </React.Fragment>
-                    );
-                  })}
+                            </>
+                          )}
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
                 </TableBody>
               </Table>
             </div>
@@ -479,19 +360,7 @@ export default function ParkingManagerVehicles() {
         tenants={tenants}
       />
 
-      {/* Permit Form Modal */}
-      {permitVehicle && (
-        <IssuePermitModal
-          open={showPermitModal}
-          onClose={() => {
-            setShowPermitModal(false);
-            setPermitVehicle(null);
-          }}
-          associationId={permitVehicle.association_id}
-          unitId={permitVehicle.unit_id}
-          vehicleId={permitVehicle.id}
-        />
-      )}
+
     </div>
   );
 }

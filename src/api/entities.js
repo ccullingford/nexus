@@ -37,6 +37,8 @@ export const Violation = base44.entities.Violation;
 
 export const Note = base44.entities.Note;
 
+export const PermitAuditEvent = base44.entities.PermitAuditEvent;
+
 
 
 // auth sdk:
